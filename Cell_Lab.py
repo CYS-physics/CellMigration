@@ -35,8 +35,10 @@ class Cell_Lab:     # OOP
         self.N_ptcl=N_ptcl
         self.Fs=Fs
         self.dt = 1/Fs
-                  
+        self.D = 1
+        self.tau = 1
         
+                  
         
         
     # boundary condition
@@ -49,16 +51,16 @@ class Cell_Lab:     # OOP
         
     # Dynamics part
     def set_zero(self):              # initializing simulation configurations
-        self.etaX
-        self.etaY
-        self.s = np.random.choice([1,-1],np.array([self.N_ptcl,self.N_X]))             # random direction at initial time
-        self.x = np.random.uniform(-self.L/2, self.L/2, size=np.array([self.N_ptcl,self.N_X]))     # starting with uniformly distributed particles
-        self.X = np.zeros(self.N_X)
-#         self.v = np.zeros(self.N_X)
+        self.etaX = np.random.normal(0,np.sqrt(self.D/self.tau),N_ptcl) 
+        self.etaY = np.random.normal(0,np.sqrt(self.D/self.tau),N_ptcl) 
+        
+        self.X = np.random.uniform(-self.L/2,self.L/2,self.N_ptcl)
+        self.Y = np.random.uniform(-self.L/2,self.L/2,self.N_ptcl)
     
-    def (self):             # random part of s dynamics
-        tumble = np.random.choice([1,-1], size=np.array([self.N_ptcl,self.N_X]), p = [1-self.delta_time*self.alpha/2, self.delta_time*self.alpha/2]) # +1 no tumble, -1 tumble
-        return tumble
+    def noise_evolve(self):             # random part of s dynamics
+        xiX = np.random.normal(0,np.sqrt(2*self.D*self.dt/self.tau**2),N_ptcl) 
+        xiY = np.random.normal(0,np.sqrt(2*self.D*self.dt/self.tau**2),N_ptcl)
+        self.etaX
     
     def dynamics(self,x,s):         # dynamics of x and s to give time difference of x and s
       
