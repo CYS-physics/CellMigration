@@ -51,20 +51,21 @@ class Cell_Lab:     # OOP
         
     # Dynamics part
     def set_zero(self):              # initializing simulation configurations
-        self.etaX = np.random.normal(0,np.sqrt(self.D/self.tau),N_ptcl) 
-        self.etaY = np.random.normal(0,np.sqrt(self.D/self.tau),N_ptcl) 
+        self.etaX = np.random.normal(0,np.sqrt(self.D/self.tau),self.N_ptcl) 
+        self.etaY = np.random.normal(0,np.sqrt(self.D/self.tau),self.N_ptcl) 
         
         self.X = np.random.uniform(-self.L/2,self.L/2,self.N_ptcl)
         self.Y = np.random.uniform(-self.L/2,self.L/2,self.N_ptcl)
     
     def noise_evolve(self):             # random part of s dynamics
-        xiX = np.random.normal(0,np.sqrt(2*self.D*self.dt/self.tau**2),N_ptcl) 
-        xiY = np.random.normal(0,np.sqrt(2*self.D*self.dt/self.tau**2),N_ptcl)
-        self.etaX
+        xiX = np.random.normal(0,np.sqrt(2*self.D*self.dt/self.tau**2),self.N_ptcl) 
+        xiY = np.random.normal(0,np.sqrt(2*self.D*self.dt/self.tau**2),self.N_ptcl)
+        self.etaX = (1-self.dt/self.tau)*self.etaX+xiX
+        self.etaY = (1-self.dt/self.tau)*self.etaY+xiY
     
     def dynamics(self,x,s):         # dynamics of x and s to give time difference of x and s
       
-        
+        return 0
     def time_evolve(self):
         (v, dx, ds) = self.dynamics(self.x, self.s)
         
