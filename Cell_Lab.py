@@ -31,21 +31,36 @@ class Cell_Lab:     # OOP
             
     # setting coefficients
     def set_coeff(self,L,N_ptcl,Fs):
+        
+        # system coefficients
         self.L=L
         self.N_ptcl=N_ptcl
         self.Fs=Fs
         self.dt = 1/Fs
-        self.D = 1
+        
+        # noise coefficients
+        self.D = 20
         self.tau = 1
         
+        # inner structure coefficients
+        self.l1 = 1
+        self.l2 = 2
+        self.r1 = 3
+        self.r2 = 2
+        self.k1 = 10
+        self.k2 = 5
+        self.mu = 1
+        self.mur = 0.2
                   
         
         
     # boundary condition
     
-    def periodic(self,x):             # add periodic boundary condition using modulus function
+    def periodic(self,x,y):             # add periodic boundary condition using modulus function
         mod_x = -self.L/2   +    (x+self.L/2)%self.L               # returns -L/2 ~ L/2
-        return mod_x
+        mod_y = -self.L/2   +    (y+self.L/2)%self.L               # returns -L/2 ~ L/2
+
+        return (mod_x,mod_y)
         
         
         
@@ -53,61 +68,116 @@ class Cell_Lab:     # OOP
     def set_zero(self):              # initializing simulation configurations
         self.etaX = np.random.normal(0,np.sqrt(self.D/self.tau),self.N_ptcl) 
         self.etaY = np.random.normal(0,np.sqrt(self.D/self.tau),self.N_ptcl) 
+        self.etaO = np.random.normal(0,np.sqrt(self.D/self.tau),self.N_ptcl) 
         
         self.X = np.random.uniform(-self.L/2,self.L/2,self.N_ptcl)
         self.Y = np.random.uniform(-self.L/2,self.L/2,self.N_ptcl)
+        self.O = np.random.uniform(0,2*np.pi,self.N_ptcl)
+        
+        self.set_structure()
+        
+    def set_structure(self):
+        self.X1 = self.X - self.l1*np.cos(self.O)
+        self.X2 = self.X + self.l2*np.cos(self.O)
+        self.Y1 = self.Y - self.l1*np.sin(self.O)
+        self.Y2 = self.Y + self.l2*np.sin(self.O)
+        
+        (self.X1,self.Y1) = self.periodic(self.X1,self.Y1)
+        (self.X2,self.Y2) = self.periodic(self.X2,self.Y2)
     
     def noise_evolve(self):             # random part of s dynamics
         xiX = np.random.normal(0,np.sqrt(2*self.D*self.dt/self.tau**2),self.N_ptcl) 
-        xiY = np.random.normal(0,np.sqrt(2*self.D*self.dt/self.tau**2),self.N_ptcl)
+        xiY = np.random.normal(0,np.sqrt(2*self.D*self.dt/self.tau**2),self.N_ptcl)        
+        xiO = np.random.normal(0,np.sqrt(2*self.D*self.dt/self.tau**2),self.N_ptcl)
+
         self.etaX = (1-self.dt/self.tau)*self.etaX+xiX
         self.etaY = (1-self.dt/self.tau)*self.etaY+xiY
+        self.etaO = (1-self.dt/self.tau)*self.etaO+xiO
+        
+        
+    def force(self,X,Y,O,l,r,k,x,y):    # force and torque by x,y to X,Y with axis at angle O with length l, with force r, k
+        relXx = (X.reshape(-1,1)-x.reshape(1,-1))
+        relYy = (Y.reshape(-1,1)-y.reshape(1,-1))
+        (relXx,relYy) = self.periodic(relXx,relYy)
+        length = np.sqrt(relXx**2+relYy**2)
+        interact = (length<r)
+        
+        fx     = np.sum(k*(r-length)*np.divide(relXx,length,out=np.zeros_like(relXx),where=length!=0)*interact, axis=1)
+        fy     = np.sum(k*(r-length)*np.divide(relYy,length,out=np.zeros_like(relYy),where=length!=0)*interact, axis=1)
+        torque = fx*l*np.sin(O)-fy*l*np.cos(O)
+        return(fx,fy,torque)
+
     
-    def dynamics(self,x,s):         # dynamics of x and s to give time difference of x and s
-      
-        return 0
     def time_evolve(self):
-        (v, dx, ds) = self.dynamics(self.x, self.s)
         
-        self.v = v
-        if self.compute:
-            self.dS1 = -np.average(self.partial_V(self.x+dx/2-v*self.delta_time/2)*(dx-v*self.delta_time),axis=0)
-            self.dS2 = (self.u/self.mu)*np.average(self.s*dx,axis=0)
+        # compute force & torque
+        FX = np.zeros(self.N_ptcl)
+        FY = np.zeros(self.N_ptcl)
+        Torque = np.zeros(self.N_ptcl)
         
-          
-        self.x += dx                     # active particles movement
-        self.s *= ds                     # direction of movement changed if the tumble is true
-        self.X += v*self.delta_time           # passive object movement
+        # force 1->1
+        (fx,fy,torque) = self.force(self.X1,self.Y1,self.O,-self.l1,self.r1,self.k1,self.X1,self.Y1)
+        FX     += fx
+        FY     += fy
+        Torque += torque
         
-        self.x = self.periodic(self.x)
-        self.X = self.periodic(self.X)
+        # force 1->2
+        (fx,fy,torque) = self.force(self.X2,self.Y2,self.O,self.l2,self.r2,self.k2,self.X1,self.Y1)
+        FX     += fx
+        FY     += fy
+        Torque += torque
         
+        # force 2->1
+        (fx,fy,torque) = self.force(self.X1,self.Y1,self.O,-self.l1,self.r1,self.k1,self.X2,self.Y2)
+        FX     += fx
+        FY     += fy
+        Torque += torque
+        
+        # force 2->2
+        (fx,fy,torque) = self.force(self.X2,self.Y2,self.O,self.l2,self.r2,self.k2,self.X2,self.Y2)
+        FX     += fx
+        FY     += fy
+        Torque += torque
+
+        
+        
+        # compute noise
+        self.noise_evolve()        
+        
+        
+        # update configuration
+        self.X += self.mu*(FX+self.etaX)*self.dt
+        self.Y += self.mu*(FY+self.etaY)*self.dt
+        self.O += self.mur*(Torque+self.etaO)*self.dt
+        
+        (self.X,self.Y) = self.periodic(self.X,self.Y)
+        self.set_structure()
+        
+    def animate(self,N_iter):
+        
+        axrange = [-self.L/2, self.L/2, -self.L/2, self.L/2]
+        
+        #Setup plot for updated positions
+        fig1 = plt.figure()
+        ax1 = fig1.add_subplot(111)
+        fig1.show()
+        fig1.tight_layout()
+        fig1.canvas.draw()
+        
+        record = False
+        
+        for nn in trange(N_iter):
+            ax1.clear()
             
-            
-  
-            # computation part with time evolving
-        for _ in trange(self.N_time*duration):
+            ax1.scatter(self.X1,self.Y1,s=self.r1*50000/self.L,color='blue')
+            ax1.scatter(self.X2,self.Y2,s=self.r2*50000/self.L,color='red')
+            ax1.axis(axrange)
+            ax1.set_aspect('equal', 'box')
+            fig1.canvas.draw()
+            if record:
+                fig1.savefig(str(os.getcwd())+'/record/'+str(nn)+'.png')
             self.time_evolve()
-            F_v += (self.L/self.N_ptcl) *np.sum(self.partial_V(self.x),axis=0)/(self.N_time*duration)              # summing the V' at each x
-            dS1_v += self.dS1/(self.N_time*duration)
-            dS2_v += self.dS2/(self.N_time*duration)
-            
-        plt.plot(self.v/self.u,F_v)
-        plt.xlabel('v/u')
-        plt.ylabel('Force_wall')
-        plt.show()
-        plt.plot(self.v/self.u,dS1_v)
-        plt.xlabel('v/u')
-        plt.ylabel('dS1')
-        plt.show()
-        plt.plot(self.v/self.u,dS2_v)
-        plt.xlabel('v/u')
-        plt.ylabel('dS2')
-        plt.show()
-        plt.plot(self.v/self.u,dS1_v+dS2_v,'r')
-        plt.xlabel('v/u')
-        plt.ylabel('dSt')
-        plt.show()
-        
-        return ((self.v/self.u,F_v,dS1_v,dS2_v))
     
+    
+       
+
