@@ -25,6 +25,8 @@ class Cell_Lab:     # OOP
         # initializing configuration of state
         self.set_zero()
         
+        self.record = False
+        
         
         print('model initialized')
             
@@ -153,7 +155,7 @@ class Cell_Lab:     # OOP
         (self.X,self.Y) = self.periodic(self.X,self.Y)
         self.set_structure()
         
-    def animate(self,N_iter):
+    def animate(self,N_iter,directory):
         
         axrange = [-self.L/2, self.L/2, -self.L/2, self.L/2]
         
@@ -163,20 +165,23 @@ class Cell_Lab:     # OOP
         fig1.show()
         fig1.tight_layout()
         fig1.canvas.draw()
+        os.makedirs('record/'+str(directory),exist_ok=True)
+
+
         
-        record = False
         
         for nn in trange(N_iter):
             ax1.clear()
             
-            ax1.scatter(self.X1,self.Y1,s=self.r1*50000/self.L,color='blue')
-            ax1.scatter(self.X2,self.Y2,s=self.r2*50000/self.L,color='red')
+            ax1.scatter(self.X1,self.Y1,s=self.r1*1500000/self.L**2,color='blue')
+            ax1.scatter(self.X2,self.Y2,s=self.r2*1500000/self.L**2,color='red')
             ax1.axis(axrange)
             ax1.set_aspect('equal', 'box')
             fig1.canvas.draw()
-            if record:
-                fig1.savefig(str(os.getcwd())+'/record/'+str(nn)+'.png')
-            self.time_evolve()
+            if self.record:
+                fig1.savefig(str(os.getcwd())+'/record/'+str(directory)+'/'+str(nn)+'.png')
+            for _ in range(50):
+                self.time_evolve()
     
     
        
