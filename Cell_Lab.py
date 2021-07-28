@@ -40,6 +40,8 @@ class Cell_Lab:     # OOP
         self.Fs=Fs
         self.dt = 1/Fs
         
+        self.N_skip = 50
+        
         # noise coefficients
         self.D = 20
         self.tau = 1
@@ -180,7 +182,7 @@ class Cell_Lab:     # OOP
             fig1.canvas.draw()
             if self.record:
                 fig1.savefig(str(os.getcwd())+'/record/'+str(directory)+'/'+str(nn)+'.png')
-            for _ in range(50):
+            for _ in range(self.N_skip):
                 self.time_evolve()
     
     
