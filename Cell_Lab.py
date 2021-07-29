@@ -108,8 +108,8 @@ class Cell_Lab:     # OOP
         interact1 = (length<r1)
         interact2 = (length<r2)
         
-        fx     = np.sum(k1*(r1-length)*np.divide(relXx,length,out=np.zeros_like(relXx),where=length!=0)*interact, axis=1) + np.sum(k2*(r2-length)*np.divide(relXx,length,out=np.zeros_like(relXx),where=length!=0)*interact, axis=1)
-        fy     = np.sum(k1*(r1-length)*np.divide(relYy,length,out=np.zeros_like(relYy),where=length!=0)*interact, axis=1) + np.sum(k2*(r2-length)*np.divide(relYy,length,out=np.zeros_like(relYy),where=length!=0)*interact, axis=1)
+        fx     = np.sum(k1*(r1-length)*np.divide(relXx,length,out=np.zeros_like(relXx),where=length!=0)*interact1, axis=1) + np.sum(k2*(r2-length)*np.divide(relXx,length,out=np.zeros_like(relXx),where=length!=0)*interact2, axis=1)
+        fy     = np.sum(k1*(r1-length)*np.divide(relYy,length,out=np.zeros_like(relYy),where=length!=0)*interact1, axis=1) + np.sum(k2*(r2-length)*np.divide(relYy,length,out=np.zeros_like(relYy),where=length!=0)*interact2, axis=1)
         torque = fx*l*np.sin(O)-fy*l*np.cos(O)
         return(fx,fy,torque)
 
