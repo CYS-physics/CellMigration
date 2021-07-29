@@ -108,9 +108,11 @@ class Cell_Lab:     # OOP
         interact1 = (length<r1)
         interact2 = (length<r2)
         
-        fx     = np.sum(k1*(r1-length)*np.divide(relXx,length,out=np.zeros_like(relXx),where=length!=0)*interact1, axis=1) + np.sum(k2*(r2-length)*np.divide(relXx,length,out=np.zeros_like(relXx),where=length!=0)*interact1, axis=1)
-        fy     = np.sum(k1*(r1-length)*np.divide(relYy,length,out=np.zeros_like(relYy),where=length!=0)*interact1, axis=1) + np.sum(k2*(r2-length)*np.divide(relYy,length,out=np.zeros_like(relYy),where=length!=0)*interact2, axis=1)
-        torque = -fx*l*np.sin(O)+fy*l*np.cos(O)
+        fx     = np.sum((k1*(r1-length)*interact1 + k2*(r2-length)*interact2)*np.divide(relXx,length,out=np.zeros_like(relXx),where=length!=0), axis=1)
+        
+        fy     = np.sum((k1*(r1-length)*interact1 + k2*(r2-length)*interact2)*np.divide(relYy,length,out=np.zeros_like(relYy),where=length!=0), axis=1)
+        
+        torque = -fx*l*np.sin(O) + fy*l*np.cos(O)      # force acted on the given particle, angle 0 increase in fx=0, fy=1
         return(fx,fy,torque)
 
     
@@ -128,13 +130,13 @@ class Cell_Lab:     # OOP
         Torque += torque
         
         # force 1->2
-        (fx,fy,torque) = self.force(self.X2,self.Y2,self.O,-self.l1,self.r1,self.r2,self.k1,self.k2,self.X1,self.Y1)
+        (fx,fy,torque) = self.force(self.X2,self.Y2,self.O,self.l2,self.r1,self.r2,self.k1,self.k2,self.X1,self.Y1)
         FX     += fx
         FY     += fy
         Torque += torque
         
         # force 2->1
-        (fx,fy,torque) = self.force(self.X1,self.Y1,self.O,self.l2,self.r2,self.r1,self.k2,self.k1,self.X2,self.Y2)
+        (fx,fy,torque) = self.force(self.X1,self.Y1,self.O,-self.l1,self.r2,self.r1,self.k2,self.k1,self.X2,self.Y2)
         FX     += fx
         FY     += fy
         Torque += torque
