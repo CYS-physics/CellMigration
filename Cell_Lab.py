@@ -49,12 +49,10 @@ class Cell_Lab:     # OOP
         self.p = 1
         
         # inner structure coefficients
-        self.l1 = 1
-        self.l2 = 2
-        self.r1 = 3
-        self.r2 = 2
-        self.k1 = 10
-        self.k2 = 5
+        self.n = 3
+        self.l = [-1,1,3]
+        self.r = [3,2,1]
+        self.k = [10,5,5]
         self.mu = 1
         self.mur = 0.2
         
@@ -76,7 +74,7 @@ class Cell_Lab:     # OOP
     def set_zero(self):              # initializing simulation configurations
         self.etaX = np.random.normal(0,np.sqrt(self.D/self.tau),self.N_ptcl) 
         self.etaY = np.random.normal(0,np.sqrt(self.D/self.tau),self.N_ptcl) 
-        self.etaO = np.random.normal(0,np.sqrt(self.D/self.tau),self.N_ptcl) 
+        self.etaO = np.random.normal(0,np.sqrt(self.Dr/self.tau),self.N_ptcl) 
         
         self.X = np.random.uniform(-self.L/2,self.L/2,self.N_ptcl)
         self.Y = np.random.uniform(-self.L/2,self.L/2,self.N_ptcl)
@@ -85,13 +83,10 @@ class Cell_Lab:     # OOP
         self.set_structure()
         
     def set_structure(self):
-        self.X1 = self.X - self.l1*np.cos(self.O)
-        self.X2 = self.X + self.l2*np.cos(self.O)
-        self.Y1 = self.Y - self.l1*np.sin(self.O)
-        self.Y2 = self.Y + self.l2*np.sin(self.O)
+        self.Xs = self.X.reshape(1,-1) + np.array(self.l).reshape(-1,1)*np.cos(self.O)
+        self.Ys = self.Y.reshape(1,-1) + np.array(self.l).reshape(-1,1)*np.sin(self.O)
         
-        (self.X1,self.Y1) = self.periodic(self.X1,self.Y1)
-        (self.X2,self.Y2) = self.periodic(self.X2,self.Y2)
+        (self.Xs,self.Ys) = self.periodic(self.Xs,self.Ys)
     
     def noise_evolve(self):             # random part of s dynamics
         xiX = np.random.normal(0,np.sqrt(2*self.D*self.dt/self.tau**2),self.N_ptcl) 
@@ -103,20 +98,20 @@ class Cell_Lab:     # OOP
         self.etaO = (1-self.dt/self.tau)*self.etaO+xiO
 #         self.etaO = xiO
         
-    def force(self,X,Y,O,l,r1,r2,k1,k2,x,y):    # force and torque by x,y to X,Y with axis at angle O with length l, with force r, k
-        relXx = (X.reshape(-1,1)-x.reshape(1,-1))
-        relYy = (Y.reshape(-1,1)-y.reshape(1,-1))
+    def force(self,i,j):    # force and torque by x,y to X,Y with axis at angle O with length l, with force r, k
+        relXx = (self.Xs[i].reshape(-1,1)-self.Xs[j].reshape(1,-1))
+        relYy = (self.Ys[i].reshape(-1,1)-self.Ys[j].reshape(1,-1))
         (relXx,relYy) = self.periodic(relXx,relYy)
         length = np.sqrt(relXx**2+relYy**2)
         
-        interact1 = (length<r1)
-        interact2 = (length<r2)
+        interact1 = (length<self.r[i])
+        interact2 = (length<self.r[j])
         
-        fx     = np.sum((k1*(r1-length)*interact1 + k2*(r2-length)*interact2)*np.divide(relXx,length,out=np.zeros_like(relXx),where=length!=0), axis=1)
+        fx     = np.sum((self.k[i]*(self.r[i]-length)*interact1 + self.k[j]*(self.r[j]-length)*interact2)*np.divide(relXx,length,out=np.zeros_like(relXx),where=length!=0), axis=1)
         
-        fy     = np.sum((k1*(r1-length)*interact1 + k2*(r2-length)*interact2)*np.divide(relYy,length,out=np.zeros_like(relYy),where=length!=0), axis=1)
+        fy     = np.sum((self.k[i]*(self.r[i]-length)*interact1 + self.k[j]*(self.r[j]-length)*interact2)*np.divide(relYy,length,out=np.zeros_like(relYy),where=length!=0), axis=1)
         
-        torque = -fx*l*np.sin(O) + fy*l*np.cos(O)      # force acted on the given particle, angle 0 increase in fx=0, fy=1
+        torque = -fx*self.l[i]*np.sin(self.O) + fy*self.l[i]*np.cos(self.O)      # force acted on the given particle, angle 0 increase in fx=0, fy=1
         return(fx,fy,torque)
 
     
@@ -127,32 +122,15 @@ class Cell_Lab:     # OOP
         FY = np.zeros(self.N_ptcl)
         Torque = np.zeros(self.N_ptcl)
         
-        # force 1->1
-        (fx,fy,torque) = self.force(self.X1,self.Y1,self.O,-self.l1,self.r1,self.r1,self.k1,self.k1,self.X1,self.Y1)
-        FX     += fx
-        FY     += fy
-        Torque += torque
         
-        # force 1->2
-        (fx,fy,torque) = self.force(self.X2,self.Y2,self.O,self.l2,self.r1,self.r2,self.k1,self.k2,self.X1,self.Y1)
-        FX     += fx
-        FY     += fy
-        Torque += torque
-        
-        # force 2->1
-        (fx,fy,torque) = self.force(self.X1,self.Y1,self.O,-self.l1,self.r2,self.r1,self.k2,self.k1,self.X2,self.Y2)
-        FX     += fx
-        FY     += fy
-        Torque += torque
-        
-        # force 2->2
-        (fx,fy,torque) = self.force(self.X2,self.Y2,self.O,self.l2,self.r2,self.r2,self.k2,self.k2,self.X2,self.Y2)
-        FX     += fx
-        FY     += fy
-        Torque += torque
+        for i in range(self.n):
+            for j in range(self.n):
+                (fx,fy,torque) = self.force(i,j)
+                FX     += fx
+                FY     += fy
+                Torque += torque
 
-        
-        
+
         # compute noise
         self.noise_evolve()        
         
@@ -163,12 +141,16 @@ class Cell_Lab:     # OOP
         # memory in force (momentum)
         self.etaX +=FX
         self.etaY +=FY
+        self.etaO +=Torque
         self.X += self.mu*(self.etaX+self.p*np.cos(self.O))*self.dt
         self.Y += self.mu*(self.etaY+self.p*np.sin(self.O))*self.dt
 
 #         self.X += self.mu*(FX+self.etaX+self.p*np.cos(self.O))*self.dt
 #         self.Y += self.mu*(FY+self.etaY+self.p*np.sin(self.O))*self.dt
-        self.O += self.mur*(Torque+self.etaO)*self.dt
+        
+    
+        self.O += self.mur*(self.etaO)*self.dt
+#         self.O += self.mur*(Torque+self.etaO)*self.dt
         
         (self.X,self.Y) = self.periodic(self.X,self.Y)
         self.set_structure()
@@ -190,9 +172,8 @@ class Cell_Lab:     # OOP
         
         for nn in trange(N_iter):
             ax1.clear()
-            
-            ax1.scatter(self.X1,self.Y1,s=self.r1*1500000/self.L**2,color='blue')
-            ax1.scatter(self.X2,self.Y2,s=self.r2*1500000/self.L**2,color='red')
+            for i in range(self.n):
+                ax1.scatter(self.Xs[i],self.Ys[i],s=self.r[i]*1500000/self.L**2)
             ax1.axis(axrange)
             ax1.set_aspect('equal', 'box')
             fig1.canvas.draw()
