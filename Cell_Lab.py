@@ -44,7 +44,9 @@ class Cell_Lab:     # OOP
         
         # noise coefficients
         self.D = 20
+        self.Dr = 20
         self.tau = 1
+        self.p = 1
         
         # inner structure coefficients
         self.l1 = 1
@@ -55,6 +57,8 @@ class Cell_Lab:     # OOP
         self.k2 = 5
         self.mu = 1
         self.mur = 0.2
+        
+
                   
         
         
@@ -92,12 +96,12 @@ class Cell_Lab:     # OOP
     def noise_evolve(self):             # random part of s dynamics
         xiX = np.random.normal(0,np.sqrt(2*self.D*self.dt/self.tau**2),self.N_ptcl) 
         xiY = np.random.normal(0,np.sqrt(2*self.D*self.dt/self.tau**2),self.N_ptcl)        
-        xiO = np.random.normal(0,np.sqrt(2*self.D*self.dt/self.tau**2),self.N_ptcl)
+        xiO = np.random.normal(0,np.sqrt(2*self.Dr*self.dt/self.tau**2),self.N_ptcl)
 
         self.etaX = (1-self.dt/self.tau)*self.etaX+xiX
         self.etaY = (1-self.dt/self.tau)*self.etaY+xiY
-#         self.etaO = (1-self.dt/self.tau)*self.etaO+xiO
-        self.etaO = 0
+        self.etaO = (1-self.dt/self.tau)*self.etaO+xiO
+#         self.etaO = xiO
         
     def force(self,X,Y,O,l,r1,r2,k1,k2,x,y):    # force and torque by x,y to X,Y with axis at angle O with length l, with force r, k
         relXx = (X.reshape(-1,1)-x.reshape(1,-1))
@@ -155,8 +159,15 @@ class Cell_Lab:     # OOP
         
         # update configuration
 #         forward = np.divide(FX*np.cos(self.O)+FY*np.sin(self.O),np.sqrt(FX**2+FY**2),out=np.zeros_like(FX*np.cos(self.O)+FY*np.sin(self.O)),where=(FX**2+FY**2)!=0)
-        self.X += self.mu*(FX+self.etaX)*self.dt
-        self.Y += self.mu*(FY+self.etaY)*self.dt
+
+        # memory in force (momentum)
+        self.etaX +=FX
+        self.etaY +=FY
+        self.X += self.mu*(self.etaX+self.p*np.cos(self.O))*self.dt
+        self.Y += self.mu*(self.etaY+self.p*np.sin(self.O))*self.dt
+
+#         self.X += self.mu*(FX+self.etaX+self.p*np.cos(self.O))*self.dt
+#         self.Y += self.mu*(FY+self.etaY+self.p*np.sin(self.O))*self.dt
         self.O += self.mur*(Torque+self.etaO)*self.dt
         
         (self.X,self.Y) = self.periodic(self.X,self.Y)
