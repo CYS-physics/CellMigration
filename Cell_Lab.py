@@ -55,6 +55,11 @@ class Cell_Lab:     # OOP
         self.k = [10,5,5]
         self.mu = 1
         self.mur = 0.2
+        self.m = 1
+        
+        self.initialize = False
+        self.grid_ordered = False
+        self.ang_ordered = False
         
 
                   
@@ -74,11 +79,29 @@ class Cell_Lab:     # OOP
     def set_zero(self):              # initializing simulation configurations
         self.etaX = np.random.normal(0,np.sqrt(self.D/self.tau),self.N_ptcl) 
         self.etaY = np.random.normal(0,np.sqrt(self.D/self.tau),self.N_ptcl) 
-        self.etaO = np.random.normal(0,np.sqrt(self.Dr/self.tau),self.N_ptcl) 
+        self.etaO = np.random.normal(0,np.sqrt(self.Dr/self.tau),self.N_ptcl)
         
-        self.X = np.random.uniform(-self.L/2,self.L/2,self.N_ptcl)
-        self.Y = np.random.uniform(-self.L/2,self.L/2,self.N_ptcl)
-        self.O = np.random.uniform(0,2*np.pi,self.N_ptcl)
+        if self.grid_ordered:
+            grid = np.linspace(0,self.L,int(np.ceil(np.sqrt(self.N_ptcl)))+1)
+            xgrid,ygrid = np.meshgrid(grid[:-1],grid[:-1])
+            xgrid = xgrid.reshape(-1)[:self.N_ptcl]
+            ygrid = ygrid.reshape(-1)[:self.N_ptcl]
+
+
+
+            self.X = xgrid
+            self.Y = ygrid
+            
+        else: 
+        
+            self.X = np.random.uniform(-self.L/2,self.L/2,self.N_ptcl)
+            self.Y = np.random.uniform(-self.L/2,self.L/2,self.N_ptcl)
+            
+            
+        if self.ang_ordered:
+            self.O = np.ones(self.N_ptcl)*np.pi/6 + (np.pi/2)*(-1)**np.arange(self.N_ptcl)
+        else:
+            self.O = np.random.uniform(0,2*np.pi,self.N_ptcl)
         
         self.set_structure()
         
@@ -135,49 +158,77 @@ class Cell_Lab:     # OOP
         self.noise_evolve()        
         
         
-        # update configuration
-#         forward = np.divide(FX*np.cos(self.O)+FY*np.sin(self.O),np.sqrt(FX**2+FY**2),out=np.zeros_like(FX*np.cos(self.O)+FY*np.sin(self.O)),where=(FX**2+FY**2)!=0)
+
 
         # memory in force (momentum)
-        self.etaX +=FX
-        self.etaY +=FY
-        self.etaO +=Torque
-        self.X += self.mu*(self.etaX+self.p*np.cos(self.O))*self.dt
-        self.Y += self.mu*(self.etaY+self.p*np.sin(self.O))*self.dt
+        self.etaX +=self.m*FX
+        self.etaY +=self.m*FY
+        
+        
+        
+        # update configuration
+
+
+        
+        
+        self.X += self.mu*(FX+self.etaX+self.p*np.cos(self.O))*self.dt
+        self.Y += self.mu*(FY+self.etaY+self.p*np.sin(self.O))*self.dt
 
 #         self.X += self.mu*(FX+self.etaX+self.p*np.cos(self.O))*self.dt
 #         self.Y += self.mu*(FY+self.etaY+self.p*np.sin(self.O))*self.dt
         
     
-        self.O += self.mur*(self.etaO)*self.dt
+        self.O += self.mur*(Torque+self.etaO)*self.dt
 #         self.O += self.mur*(Torque+self.etaO)*self.dt
         
         (self.X,self.Y) = self.periodic(self.X,self.Y)
         self.set_structure()
         
+    def initializing(self,N):
+        L = self.L
+        self.L = 3*L
+        self.set_zero()
+        print('initializing...')
+        for i in trange(N):
+            self.L = L*(1+9*(N-i)/N)
+            self.time_evolve()
+        self.L = L
+        
+        
     def animate(self,N_iter,directory):
+        if self.initialize:
+            self.initializing(2000)
         
         axrange = [-self.L/2, self.L/2, -self.L/2, self.L/2]
         
         #Setup plot for updated positions
         fig1 = plt.figure()
-        ax1 = fig1.add_subplot(111)
+        ax1 = fig1.add_subplot(121)
+        ax2 = fig1.add_subplot(122)
+        for i in range(self.n):
+            ax2.scatter(0,self.l[i],s=self.r[i]*500000/self.L**2)
+        ax2.quiver(0,self.l[0],0,(self.l[-1]-self.l[0]),scale =self.L)
+        ax2.axis(axrange)
+        ax2.set_aspect('equal','box')
         fig1.show()
         fig1.tight_layout()
         fig1.canvas.draw()
+        
         os.makedirs('record/'+str(directory),exist_ok=True)
 
 
         
         
         for nn in trange(N_iter):
-            ax1.clear()
-            for i in range(self.n):
-                ax1.scatter(self.Xs[i],self.Ys[i],s=self.r[i]*1500000/self.L**2)
-            ax1.axis(axrange)
-            ax1.set_aspect('equal', 'box')
-            fig1.canvas.draw()
+            
             if self.record:
+                ax1.clear()
+                ax1.quiver(self.Xs[0],self.Ys[0],(self.l[-1]-self.l[0])*np.cos(self.O),(self.l[-1]-self.l[0])*np.sin(self.O),scale = self.L)
+    #             for i in range(self.n):
+    #                 ax1.scatter(self.Xs[i],self.Ys[i],s=self.r[i]*500000/self.L**2)
+                ax1.axis(axrange)
+                ax1.set_aspect('equal', 'box')
+                fig1.canvas.draw()
                 fig1.savefig(str(os.getcwd())+'/record/'+str(directory)+'/'+str(nn)+'.png')
             for _ in range(self.N_skip):
                 self.time_evolve()
