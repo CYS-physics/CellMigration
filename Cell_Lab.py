@@ -87,10 +87,9 @@ class Cell_Lab:     # OOP
             xgrid = xgrid.reshape(-1)[:self.N_ptcl]
             ygrid = ygrid.reshape(-1)[:self.N_ptcl]
 
-
-
             self.X = xgrid
             self.Y = ygrid
+         
             
         else: 
         
@@ -98,8 +97,10 @@ class Cell_Lab:     # OOP
             self.Y = np.random.uniform(-self.L/2,self.L/2,self.N_ptcl)
             
             
-        if self.ang_ordered:
+        if self.ang_ordered=='anti-parallel':
             self.O = np.ones(self.N_ptcl)*np.pi/6 + (np.pi/2)*(-1)**np.arange(self.N_ptcl)
+        elif self.ang_ordered=='parallel':
+            self.O = np.ones(self.N_ptcl)*np.pi/6 
         else:
             self.O = np.random.uniform(0,2*np.pi,self.N_ptcl)
         
