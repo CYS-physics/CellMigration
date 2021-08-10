@@ -59,6 +59,7 @@ class Cell_Lab:     # OOP
         self.k = [10,5,5]
         self.mu = 1
         self.mur = 0.2
+        self.poten_order = 3
         
         self.initialize = False
         self.grid_ordered = False
@@ -138,9 +139,9 @@ class Cell_Lab:     # OOP
         interact1 = (length<self.r[i])
         interact2 = (length<self.r[j])
         
-        fx     = np.sum((self.k[i]*(self.r[i]-length)**2*interact1 + self.k[j]*(self.r[j]-length)*interact2)*np.divide(relXx,length,out=np.zeros_like(relXx),where=length!=0), axis=1)
+        fx     = np.sum((self.k[i]*(self.r[i]-length)**(self.poten_order-1)*interact1 + self.k[j]*(self.r[j]-length)*interact2)*np.divide(relXx,length,out=np.zeros_like(relXx),where=length!=0), axis=1)
         
-        fy     = np.sum((self.k[i]*(self.r[i]-length)**2*interact1 + self.k[j]*(self.r[j]-length)*interact2)*np.divide(relYy,length,out=np.zeros_like(relYy),where=length!=0), axis=1)
+        fy     = np.sum((self.k[i]*(self.r[i]-length)**(self.poten_order-1)*interact1 + self.k[j]*(self.r[j]-length)*interact2)*np.divide(relYy,length,out=np.zeros_like(relYy),where=length!=0), axis=1)
         
         torque = -fx*self.l[i]*np.sin(self.O) + fy*self.l[i]*np.cos(self.O)      # force acted on the given particle, angle 0 increase in fx=0, fy=1
         return(fx,fy,torque)
