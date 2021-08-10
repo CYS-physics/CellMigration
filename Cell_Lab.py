@@ -45,7 +45,11 @@ class Cell_Lab:     # OOP
         # noise coefficients
         self.D = 20
         self.Dr = 20
-        self.tau = 1
+        self.tau_noise = 1
+        
+        # dynamics
+        self.memory = False
+        self.tau_momentum = 0.1
         self.p = 1
         
         # inner structure coefficients
@@ -55,7 +59,6 @@ class Cell_Lab:     # OOP
         self.k = [10,5,5]
         self.mu = 1
         self.mur = 0.2
-        self.m = 1
         
         self.initialize = False
         self.grid_ordered = False
@@ -77,9 +80,13 @@ class Cell_Lab:     # OOP
         
     # Dynamics part
     def set_zero(self):              # initializing simulation configurations
-        self.etaX = np.random.normal(0,np.sqrt(self.D/self.tau),self.N_ptcl) 
-        self.etaY = np.random.normal(0,np.sqrt(self.D/self.tau),self.N_ptcl) 
-        self.etaO = np.random.normal(0,np.sqrt(self.Dr/self.tau),self.N_ptcl)
+        self.etaX = np.random.normal(0,np.sqrt(self.D/self.tau_noise),self.N_ptcl) 
+        self.etaY = np.random.normal(0,np.sqrt(self.D/self.tau_noise),self.N_ptcl) 
+        self.etaO = np.random.normal(0,np.sqrt(self.Dr/self.tau_noise),self.N_ptcl)
+        
+        self.FX = 0
+        self.FY = 0
+        self.Torque = 0
         
         if self.grid_ordered:
             grid = np.linspace(0,self.L,int(np.ceil(np.sqrt(self.N_ptcl)))+1)
@@ -113,13 +120,13 @@ class Cell_Lab:     # OOP
         (self.Xs,self.Ys) = self.periodic(self.Xs,self.Ys)
     
     def noise_evolve(self):             # random part of s dynamics
-        xiX = np.random.normal(0,np.sqrt(2*self.D*self.dt/self.tau**2),self.N_ptcl) 
-        xiY = np.random.normal(0,np.sqrt(2*self.D*self.dt/self.tau**2),self.N_ptcl)        
-        xiO = np.random.normal(0,np.sqrt(2*self.Dr*self.dt/self.tau**2),self.N_ptcl)
+        xiX = np.random.normal(0,np.sqrt(2*self.D*self.dt/self.tau_noise**2),self.N_ptcl) 
+        xiY = np.random.normal(0,np.sqrt(2*self.D*self.dt/self.tau_noise**2),self.N_ptcl)        
+        xiO = np.random.normal(0,np.sqrt(2*self.Dr*self.dt/self.tau_noise**2),self.N_ptcl)
 
-        self.etaX = (1-self.dt/self.tau)*self.etaX+xiX
-        self.etaY = (1-self.dt/self.tau)*self.etaY+xiY
-        self.etaO = (1-self.dt/self.tau)*self.etaO+xiO
+        self.etaX = (1-self.dt/self.tau_noise)*self.etaX+xiX
+        self.etaY = (1-self.dt/self.tau_noise)*self.etaY+xiY
+        self.etaO = (1-self.dt/self.tau_noise)*self.etaO+xiO
 #         self.etaO = xiO
         
     def force(self,i,j):    # force and torque by x,y to X,Y with axis at angle O with length l, with force r, k
@@ -131,9 +138,9 @@ class Cell_Lab:     # OOP
         interact1 = (length<self.r[i])
         interact2 = (length<self.r[j])
         
-        fx     = np.sum((self.k[i]*(self.r[i]-length)*interact1 + self.k[j]*(self.r[j]-length)*interact2)*np.divide(relXx,length,out=np.zeros_like(relXx),where=length!=0), axis=1)
+        fx     = np.sum((self.k[i]*(self.r[i]-length)**2*interact1 + self.k[j]*(self.r[j]-length)*interact2)*np.divide(relXx,length,out=np.zeros_like(relXx),where=length!=0), axis=1)
         
-        fy     = np.sum((self.k[i]*(self.r[i]-length)*interact1 + self.k[j]*(self.r[j]-length)*interact2)*np.divide(relYy,length,out=np.zeros_like(relYy),where=length!=0), axis=1)
+        fy     = np.sum((self.k[i]*(self.r[i]-length)**2*interact1 + self.k[j]*(self.r[j]-length)*interact2)*np.divide(relYy,length,out=np.zeros_like(relYy),where=length!=0), axis=1)
         
         torque = -fx*self.l[i]*np.sin(self.O) + fy*self.l[i]*np.cos(self.O)      # force acted on the given particle, angle 0 increase in fx=0, fy=1
         return(fx,fy,torque)
@@ -162,8 +169,9 @@ class Cell_Lab:     # OOP
 
 
         # memory in force (momentum)
-        self.etaX +=self.m*FX
-        self.etaY +=self.m*FY
+        self.FX     = (1-self.dt/self.tau_momentum)*self.FX*self.memory  +  FX
+        self.FY     = (1-self.dt/self.tau_momentum)*self.FX*self.memory  +  FY
+        self.Torque = (1-self.dt/self.tau_momentum)*self.FX*self.memory  +  Torque
         
         
         
@@ -172,14 +180,14 @@ class Cell_Lab:     # OOP
 
         
         
-        self.X += self.mu*(FX+self.etaX+self.p*np.cos(self.O))*self.dt
-        self.Y += self.mu*(FY+self.etaY+self.p*np.sin(self.O))*self.dt
+        self.X += self.mu*(self.FX+self.etaX+self.p*np.cos(self.O))*self.dt
+        self.Y += self.mu*(self.FY+self.etaY+self.p*np.sin(self.O))*self.dt
 
 #         self.X += self.mu*(FX+self.etaX+self.p*np.cos(self.O))*self.dt
 #         self.Y += self.mu*(FY+self.etaY+self.p*np.sin(self.O))*self.dt
         
     
-        self.O += self.mur*(Torque+self.etaO)*self.dt
+        self.O += self.mur*(self.Torque+self.etaO)*self.dt
 #         self.O += self.mur*(Torque+self.etaO)*self.dt
         
         (self.X,self.Y) = self.periodic(self.X,self.Y)
