@@ -50,7 +50,7 @@ class Cell_Lab:     # OOP
         # dynamics
         self.memory = False
         self.tau_momentum = 0.1
-        self.p = 1
+        self.p = 0
         
         # inner structure coefficients
         self.n = 3
@@ -123,12 +123,13 @@ class Cell_Lab:     # OOP
     def noise_evolve(self):             # random part of s dynamics
         xiX = np.random.normal(0,np.sqrt(2*self.D*self.dt/self.tau_noise**2),self.N_ptcl) 
         xiY = np.random.normal(0,np.sqrt(2*self.D*self.dt/self.tau_noise**2),self.N_ptcl)        
-        xiO = np.random.normal(0,np.sqrt(2*self.Dr*self.dt/self.tau_noise**2),self.N_ptcl)
+#         xiO = np.random.normal(0,np.sqrt(2*self.Dr*self.dt/self.tau_noise**2),self.N_ptcl)
+        xiO=0
 
         self.etaX = (1-self.dt/self.tau_noise)*self.etaX+xiX
         self.etaY = (1-self.dt/self.tau_noise)*self.etaY+xiY
-        self.etaO = (1-self.dt/self.tau_noise)*self.etaO+xiO
-#         self.etaO = xiO
+#         self.etaO = (1-self.dt/self.tau_noise)*self.etaO+xiO
+        self.etaO = xiO
         
     def force(self,i,j):    # force and torque by x,y to X,Y with axis at angle O with length l, with force r, k
         relXx = (self.Xs[i].reshape(-1,1)-self.Xs[j].reshape(1,-1))
@@ -170,9 +171,9 @@ class Cell_Lab:     # OOP
 
 
         # memory in force (momentum)
-        self.FX     = (1-self.dt/self.tau_momentum)*self.FX*self.memory  +  FX
-        self.FY     = (1-self.dt/self.tau_momentum)*self.FX*self.memory  +  FY
-        self.Torque = (1-self.dt/self.tau_momentum)*self.FX*self.memory  +  Torque
+#         self.FX     = (1-self.dt/self.tau_momentum)*self.FX*self.memory  +  FX
+#         self.FY     = (1-self.dt/self.tau_momentum)*self.FX*self.memory  +  FY
+#         self.Torque = (1-self.dt/self.tau_momentum)*self.FX*self.memory  +  Torque
         
         
         
@@ -181,14 +182,14 @@ class Cell_Lab:     # OOP
 
         
         
-        self.X += self.mu*(self.FX+self.etaX+self.p*np.cos(self.O))*self.dt
-        self.Y += self.mu*(self.FY+self.etaY+self.p*np.sin(self.O))*self.dt
+        self.X += self.mu*(FX+self.etaX)*self.dt
+        self.Y += self.mu*(FY+self.etaY)*self.dt
 
 #         self.X += self.mu*(FX+self.etaX+self.p*np.cos(self.O))*self.dt
 #         self.Y += self.mu*(FY+self.etaY+self.p*np.sin(self.O))*self.dt
         
     
-        self.O += self.mur*(self.Torque+self.etaO)*self.dt
+        self.O += self.mur*(Torque+self.etaO)*self.dt
 #         self.O += self.mur*(Torque+self.etaO)*self.dt
         
         (self.X,self.Y) = self.periodic(self.X,self.Y)
