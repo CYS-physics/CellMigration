@@ -98,7 +98,7 @@ class Cell_Lab:     # OOP
          
             
         elif self.grid =='fixed':
-            lattice = 4
+            lattice = self.lattice
             grid = np.linspace(0,self.L,lattice+1)
             xgrid,ygrid = np.meshgrid(grid[:-1],grid[:-1])
             xgrid = xgrid.reshape(-1)[:lattice**2]
@@ -106,8 +106,9 @@ class Cell_Lab:     # OOP
             self.X[:lattice**2] = xgrid
             self.Y[:lattice**2] = ygrid
             
-            self.X[lattice**2:] = (self.X[1]+self.X[2])/2
-            self.Y[lattice**2:] = self.Y[1]
+            self.X[lattice**2:] = xgrid[:self.N_ptcl-lattice**2]+(-self.X[1]+self.X[2])/2
+            self.Y[lattice**2:] = ygrid[:self.N_ptcl-lattice**2]
+            
             
             
 #             grid = np.linspace(0,self.L,int(np.ceil(np.sqrt(self.N_ptcl-1)))+1)
