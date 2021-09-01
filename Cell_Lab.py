@@ -9,8 +9,6 @@ import matplotlib.pyplot as plt      # visualization
 import os                            # file management
 import sys
 
-
-
 class Cell_Lab:     # OOP
     """basic model to simulate 2D passive objects under active noise"""
     
@@ -62,7 +60,7 @@ class Cell_Lab:     # OOP
         self.poten_order = 3
         
         self.initialize = False
-        self.grid_ordered = False
+        self.grid = 'ordered'
         self.ang_ordered = False
         
 
@@ -89,7 +87,7 @@ class Cell_Lab:     # OOP
         self.FY = 0
         self.Torque = 0
         
-        if self.grid_ordered:
+        if self.grid=='ordered':
             grid = np.linspace(0,self.L,int(np.ceil(np.sqrt(self.N_ptcl)))+1)
             xgrid,ygrid = np.meshgrid(grid[:-1],grid[:-1])
             xgrid = xgrid.reshape(-1)[:self.N_ptcl]
@@ -99,6 +97,30 @@ class Cell_Lab:     # OOP
             self.Y = ygrid
          
             
+        elif self.grid =='fixed':
+            lattice = 4
+            grid = np.linspace(0,self.L,lattice+1)
+            xgrid,ygrid = np.meshgrid(grid[:-1],grid[:-1])
+            xgrid = xgrid.reshape(-1)[:lattice**2]
+            ygrid = ygrid.reshape(-1)[:lattice**2]
+            self.X[:lattice**2] = xgrid
+            self.Y[:lattice**2] = ygrid
+            
+            self.X[lattice**2:] = (self.X[1]+self.X[2])/2
+            self.Y[lattice**2:] = self.Y[1]
+            
+            
+#             grid = np.linspace(0,self.L,int(np.ceil(np.sqrt(self.N_ptcl-1)))+1)
+#             xgrid,ygrid = np.meshgrid(grid[:-1],grid[:-1])
+#             xgrid = xgrid.reshape(-1)[:self.N_ptcl-1]
+#             ygrid = ygrid.reshape(-1)[:self.N_ptcl-1]
+
+#             self.X[1:] = xgrid
+#             self.Y[1:] = ygrid
+            
+#             self.X[0] = (self.X[1]+self.X[2])/2
+#             self.Y[0] = self.Y[1]
+        
         else: 
         
             self.X = np.random.uniform(-self.L/2,self.L/2,self.N_ptcl)
@@ -134,15 +156,17 @@ class Cell_Lab:     # OOP
     def force(self,i,j):    # force and torque by x,y to X,Y with axis at angle O with length l, with force r, k
         relXx = (self.Xs[i].reshape(-1,1)-self.Xs[j].reshape(1,-1))
         relYy = (self.Ys[i].reshape(-1,1)-self.Ys[j].reshape(1,-1))
+        
+        
         (relXx,relYy) = self.periodic(relXx,relYy)
         length = np.sqrt(relXx**2+relYy**2)
         
         interact1 = (length<self.r[i])
         interact2 = (length<self.r[j])
         
-        fx     = np.sum((self.k[i]*(self.r[i]-length)**(self.poten_order-1)*interact1 + self.k[j]*(self.r[j]-length)*interact2)*np.divide(relXx,length,out=np.zeros_like(relXx),where=length!=0), axis=1)
+        fx     = np.sum((self.k[i]*interact1*(self.r[i]-length)**(self.poten_order-1) + self.k[j]*interact2*(self.r[j]-length)**(self.poten_order-1))*np.divide(relXx,length,out=np.zeros_like(relXx),where=length!=0), axis=1)
         
-        fy     = np.sum((self.k[i]*(self.r[i]-length)**(self.poten_order-1)*interact1 + self.k[j]*(self.r[j]-length)*interact2)*np.divide(relYy,length,out=np.zeros_like(relYy),where=length!=0), axis=1)
+        fy     = np.sum((self.k[i]*interact1*(self.r[i]-length)**(self.poten_order-1) + self.k[j]*interact2*(self.r[j]-length)**(self.poten_order-1))*np.divide(relYy,length,out=np.zeros_like(relYy),where=length!=0), axis=1)
         
         torque = -fx*self.l[i]*np.sin(self.O) + fy*self.l[i]*np.cos(self.O)      # force acted on the given particle, angle 0 increase in fx=0, fy=1
         return(fx,fy,torque)
@@ -155,7 +179,33 @@ class Cell_Lab:     # OOP
         FY = np.zeros(self.N_ptcl)
         Torque = np.zeros(self.N_ptcl)
         
+#         if self.grid =='fixed':
+#             FX = np.zeros(self.N_ptcl)
+#             FY = np.zeros(self.N_ptcl)
+#             Torque = np.zeros(self.N_ptcl)
+            
+#             for i in range(self.n):
+#                 for j in range(self.n):
+#                     relXx = self.Xs[i,0]-self.Xs[j]
+#                     relYy = self.Ys[i,0]-self.Ys[j]
         
+        
+#                     (relXx,relYy) = self.periodic(relXx,relYy)
+#                     length = np.sqrt(relXx**2+relYy**2)
+
+#                     interact1 = (length<self.r[i])
+#                     interact2 = (length<self.r[j])
+
+#                     fx     = np.sum((self.k[i]*interact1*(self.r[i]-length)**(self.poten_order-1) + self.k[j]*interact2*(self.r[j]-length)**(self.poten_order-1))*np.divide(relXx,length,out=np.zeros_like(relXx),where=length!=0))
+
+#                     fy     = np.sum((self.k[i]*interact1*(self.r[i]-length)**(self.poten_order-1) + self.k[j]*interact2*(self.r[j]-length)**(self.poten_order-1))*np.divide(relYy,length,out=np.zeros_like(relYy),where=length!=0))
+
+#                     torque = -fx*self.l[i]*np.sin(self.O[0]) + fy*self.l[i]*np.cos(self.O[0])      # force acted on the given particle, angle 0 increase in fx=0, fy=1
+#                     FX[0]+=fx
+#                     FY[0]+=fy
+#                     Torque[0]+=torque
+            
+#         else:
         for i in range(self.n):
             for j in range(self.n):
                 (fx,fy,torque) = self.force(i,j)
