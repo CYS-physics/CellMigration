@@ -9,6 +9,9 @@ import matplotlib.pyplot as plt      # visualization
 import os                            # file management
 import sys
 
+import imageio
+from PIL import Image
+
 class Cell_Lab:     # OOP
     """basic model to simulate 2D passive objects under active noise"""
     
@@ -88,6 +91,8 @@ class Cell_Lab:     # OOP
         self.Torque = 0
         
         if self.grid=='ordered':
+            self.X = np.zeros(self.N_ptcl)
+            self.Y = np.zeros(self.N_ptcl)
             grid = np.linspace(0,self.L,int(np.ceil(np.sqrt(self.N_ptcl)))+1)
             xgrid,ygrid = np.meshgrid(grid[:-1],grid[:-1])
             xgrid = xgrid.reshape(-1)[:self.N_ptcl]
@@ -99,15 +104,24 @@ class Cell_Lab:     # OOP
             
         elif self.grid =='fixed':
             lattice = self.lattice
+            self.X = np.zeros(self.N_ptcl)
+            self.Y = np.zeros(self.N_ptcl)
             grid = np.linspace(0,self.L,lattice+1)
             xgrid,ygrid = np.meshgrid(grid[:-1],grid[:-1])
-            xgrid = xgrid.reshape(-1)[:lattice**2]
-            ygrid = ygrid.reshape(-1)[:lattice**2]
+            xgrid = xgrid.reshape(-1)
+            ygrid = ygrid.reshape(-1)
             self.X[:lattice**2] = xgrid
             self.Y[:lattice**2] = ygrid
             
-            self.X[lattice**2:] = xgrid[:self.N_ptcl-lattice**2]+(-self.X[1]+self.X[2])/2
-            self.Y[lattice**2:] = ygrid[:self.N_ptcl-lattice**2]
+            grid2 = np.linspace(0,self.L/4,int(np.ceil(np.sqrt(self.N_ptcl-lattice**2)))+1)
+            xgrid2,ygrid2 = np.meshgrid(grid2[:-1],grid2[:-1])
+            xgrid2 = xgrid2.reshape(-1)[:self.N_ptcl-lattice**2]
+            ygrid2 = ygrid2.reshape(-1)[:self.N_ptcl-lattice**2]
+
+
+            self.X[lattice**2:] = xgrid2
+            self.Y[lattice**2:] = ygrid2
+            
             
             
             
@@ -296,5 +310,62 @@ class Cell_Lab:     # OOP
                 self.time_evolve()
     
     
-       
+def simulate(order, name):
 
+    lattice = 16
+    C1 = Cell_Lab(L=24,N_ptcl=lattice**2+6**2,Fs=500)
+
+    C1.lattice = lattice
+    C1.D = 50
+    C1.Dr = 0
+    C1.tau_noise =0.05
+
+    if order ==3:
+        mul = 1
+    elif order ==2:
+        mul = 0.125
+
+    C1.n = 5
+    C1.l = [ -1.3,-1,  -0.4,   0.2,0.6 ]
+    C1.r = [0.45,    0.45,     0.45,0.45,0.45]
+    C1.k = [1500*mul,    1300*mul,  1000*mul,1500*mul,1000*mul]
+
+
+
+
+    C1.poten_order = int(order)
+    jump = 6
+
+    C1.mu = 0.00004*np.ones(C1.N_ptcl)
+    C1.mur = 0.00002*np.ones(C1.N_ptcl)
+
+
+    C1.mu[lattice**2:] = 0.1
+    C1.mur[lattice**2:] = 0.05
+
+
+
+    C1.N_skip = 100
+    C1.p = 0
+
+#     name = '_test3'
+    N_simul = 3000
+
+    C1.record = True           # True, False
+    C1.initialize = False      # True, False
+    C1.grid = 'fixed'#'fixed'     # 'ordered','fixed',False
+    C1.ang_ordered = 'parallel'     # 'parallel', 'anti-parallel', False
+
+
+    C1.set_zero()
+    # C1.O[::jump]+=np.pi
+    C1.O[lattice**2:]+=np.pi
+
+
+    C1.animate(N_simul,name)
+    path_dir = os.getcwd()+'/record/'+name+'/'
+    t_list = np.arange(N_simul)
+    # t_list = np.arange(500)
+    path=[path_dir+f"{t}.png" for t in t_list]
+    paths=[Image.open(i) for i in path]
+    imageio.mimsave(path_dir+'anim'+name+'.gif',paths,fps=30)
