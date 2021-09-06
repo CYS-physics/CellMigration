@@ -1,4 +1,4 @@
-# asymmetric interacting particles under active noise
+d# asymmetric interacting particles under active noise
 # 2D periodic boundary condition
 # Yunsik Choe, Seoul national University
 
@@ -552,6 +552,10 @@ class Cell_Lattice_Lab:
         
 #         (self.X_mobile,self.Y_mobile) = self.periodic(self.X_mobile,self.Y_mobile)
         self.set_structure()
+    
+    def measure(self,N_iter):
+        
+    
     
     def animate(self,N_iter,directory):
         axrange = [-self.L*self.N_view/2, self.L*self.N_view/2, -self.L*self.N_view/2, self.L*self.N_view/2]
