@@ -40,18 +40,18 @@ class Beads:     # OOP
         self.N_skip = 50
         
         # noise coefficients
-        self.D = 20
+        self.D = 5000
         
         
         # dynamics
-        self.p = 0.1    # propulsion
-        self.mu = 0.1
-        self.mur = 0.01
+        self.p = 2000    # propulsion
+        self.mu = 0.002
+        self.mur = 0.002
         
         # inner structure coefficients
-        self.k = 2         # epsilon of WCA potential
-        self.l = 1.8    # length between fixed beads
-        self.r_cut = [1,1.05,1.1]  # radius of beads
+        self.k = 1         # epsilon of WCA potential
+        self.l = 1    # length between fixed beads
+        self.r_cut = [1.5,1.65,1.8]  # radius of beads [r1+r1,r1+r2,r2+r2]
         
         
         
@@ -168,9 +168,9 @@ class Beads:     # OOP
         # compute force & torque
         (f1x,f2x,f2y) = self.force()
         Fx = f1x
+        self.v = np.mean(Fx)*self.mu
         Fx[1:self.N_active+1]+=f2x-self.p*np.cos(self.O)
         Torque = self.l/2*(f2y*np.cos(self.O)+(f1x[1:self.N_active+1]-f2x-self.p*np.cos(self.O))*np.sin(self.O))
-#         print(Torque[0])
         # update configuration
         self.X+=self.mu*Fx*self.dt
         self.O+=self.mur*Torque*self.dt
@@ -205,8 +205,8 @@ class Beads:     # OOP
         for nn in trange(N_iter):
             
             ax1.clear()
-            ax1.scatter(self.X,np.zeros(self.N_ptcl),s=self.r_cut[0]**2*100000/self.L**2,color='red')
-            ax1.scatter(self.Xs,self.Ys,s=self.r_cut[1]**2*100000/self.L**2,color='blue')
+            ax1.scatter(self.X,np.zeros(self.N_ptcl),s=self.r_cut[0]**2*50000/self.L**2,color='red')
+            ax1.scatter(self.Xs,self.Ys,s=self.r_cut[1]**2*50000/self.L**2,color='blue')
             ax1.axis(axrange)
             ax1.set_aspect('equal', 'box')
             fig1.canvas.draw()
@@ -214,6 +214,18 @@ class Beads:     # OOP
                 fig1.savefig(str(os.getcwd())+'/record/'+str(directory)+'/'+str(nn)+'.png')
             for _ in range(self.N_skip):
                 self.time_evolve()
+                
+    def measure(self,N_iter,N_repeat,directory):
+        v = np.zeros(N_repeat)
+        for i in trange(N_repeat):
+            self.set_zero
+            v_temp = np.zeros(N_iter)
+            for j in range(N_iter):
+                self.time_evolve()
+                v_temp[j] = np.abs(self.v)
+            v[i] = np.average(v_temp)
+        return v
+        
                 
 
 
