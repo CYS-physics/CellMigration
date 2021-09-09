@@ -68,7 +68,14 @@ class Beads:     # OOP
     # Dynamics part
     def set_zero(self):              # initializing simulation configurations
         
-        self.X = np.ones(self.N_ensemble).reshape(-1,1)*np.linspace(0,self.L,self.N_ptcl+1)[:self.N_ptcl].reshape(1,-1)
+#         self.X = np.ones(self.N_ensemble).reshape(-1,1)*np.linspace(0,self.L,self.N_ptcl+1)[:self.N_ptcl].reshape(1,-1)
+        self.X = np.zeros((self.N_ensemble,self.N_ptcl))
+        
+        l1 = self.r_cut[0]*(self.N_ptcl-self.N_active)
+        l2 = self.r_cut[1]*(self.N_active)
+        self.X[:,1:self.N_active+1] = np.ones(self.N_ensemble).reshape(-1,1)*np.linspace(0,self.L*(l2/(l1+l2)),self.N_active+1)[1:].reshape(1,-1)# active ones
+        self.X[:,self.N_active+1:] = np.ones(self.N_ensemble).reshape(-1,1)*np.linspace(self.L*(l2/(l1+l2)),self.L,self.N_ptcl-self.N_active+1)[1:-1].reshape(1,-1)     # passive ones
+        
         self.O = np.ones((self.N_ensemble,self.N_active))*np.pi/2
         
         self.set_structure()
@@ -90,8 +97,8 @@ class Beads:     # OOP
         r = np.sqrt(rx**2 + ry**2)
         force = 4*self.k*(-12*r**(-13)/r_0**(-12)+6*r**(-7)/r_0**(-6))*(np.abs(r)<r_cut)
 #         return force*np.divide(ry,r,out=np.zeros_like(ry),where=r!=0)
-        return force*(np.divide(rx,r,out=np.zeros_like(rx),where=r!=0),np.divide(ry,r,out=np.zeros_like(ry),where=r!=0))
-        
+#         return force*(np.divide(rx,r,out=np.zeros_like(rx),where=r!=0),np.divide(ry,r,out=np.zeros_like(ry),where=r!=0))
+        return force*(rx/r,ry/r)
     
     def force(self):    # force from WCA potential (truncated LJ potential -> hard wall repulsion)
         f1x = np.zeros((self.N_ensemble,self.N_ptcl))
@@ -107,10 +114,13 @@ class Beads:     # OOP
         relx_right = self.periodic(np.roll(self.X,-1,axis=1)-self.X)
         relx_left = self.periodic(np.roll(self.X,1,axis=1)-self.X)
         
-        (fx,fy)=self.WCA(relx_right,0,self.r_cut[0])
+        lengthR = np.concatenate(([self.r_cut[0]+self.r_cut[1]],(self.r_cut[1]*2)*np.ones(self.N_active),(self.r_cut[0]*2)*np.ones(self.N_ptcl-self.N_active-1)))
+        lengthL = np.concatenate(([self.r_cut[0]*2],[self.r_cut[0]+self.r_cut[1]],(self.r_cut[1]*2)*np.ones(self.N_active),(self.r_cut[0]*2)*np.ones(self.N_ptcl-self.N_active-2)))
+        (fx,fy)=self.WCA(relx_right,0,lengthR)
         f1x += fx # right particle
-        (fx,fy)=self.WCA(relx_left,0,self.r_cut[0])
+        (fx,fy)=self.WCA(relx_left,0,lengthL)
         f1x += fx  # left particle
+        
         
         # 1->2
         relx_right = self.periodic(self.X[:,2:self.N_active+2]-self.Xs)
@@ -118,22 +128,28 @@ class Beads:     # OOP
         rely_right = -self.Ys
         rely_left = -self.Ys
         
-        (fx,fy)=self.WCA(relx_right,rely_right,self.r_cut[1])
+        lengthR = np.concatenate(((self.r_cut[1]+self.r_cut[2])*np.ones(self.N_active-1),[(self.r_cut[0]+self.r_cut[2])]))
+        lengthL = np.concatenate(([(self.r_cut[0]+self.r_cut[2])],(self.r_cut[1]+self.r_cut[2])*np.ones(self.N_active-1)))
+        (fx,fy)=self.WCA(relx_right,rely_right,lengthR)
         f2x+=fx
         f2y+=fy
-        (fx,fy)=self.WCA(relx_left,rely_left,self.r_cut[1])
+        (fx,fy)=self.WCA(relx_left,rely_left,lengthL)
         f2x+=fx
         f2y+=fy
         
+        
         # 2->1
+        
         relx_right = self.periodic(self.Xs-self.X[:,:self.N_active])
         relx_left = self.periodic(self.Xs-self.X[:,2:self.N_active+2])
         rely_right = self.Ys
         rely_left = self.Ys
         
-        (fx,fy)=self.WCA(relx_right,rely_right,self.r_cut[1])
+        lengthR = np.concatenate(([(self.r_cut[0]+self.r_cut[2])],(self.r_cut[1]+self.r_cut[2])*np.ones(self.N_active-1)))
+        lengthL = np.concatenate(((self.r_cut[1]+self.r_cut[2])*np.ones(self.N_active-1),[(self.r_cut[0]+self.r_cut[2])]))
+        (fx,fy)=self.WCA(relx_right,rely_right,lengthR)
         f1x[:,:self.N_active]+=fx
-        (fx,fy)=self.WCA(relx_left,rely_left,self.r_cut[1])
+        (fx,fy)=self.WCA(relx_left,rely_left,lengthL)
         f1x[:,2:self.N_active+2]+=fx
         
         
@@ -143,10 +159,10 @@ class Beads:     # OOP
         rely_right = self.Ys[:,1:]-self.Ys[:,:-1]
         rely_left = self.Ys[:,:-1]-self.Ys[:,1:]
         
-        (fx,fy)=self.WCA(relx_right,rely_right,self.r_cut[2])
+        (fx,fy)=self.WCA(relx_right,rely_right,self.r_cut[2]*2)
         f2x[:,:-1]+=fx
         f2y[:,:-1]+=fy
-        (fx,fy)=self.WCA(relx_left,rely_left,self.r_cut[2])
+        (fx,fy)=self.WCA(relx_left,rely_left,self.r_cut[2]*2)
         f2x[:,1:]+=fx
         f2y[:,1:]+=fy
         
@@ -170,7 +186,9 @@ class Beads:     # OOP
         Fx = f1x
         Fx[:,1:self.N_active+1]+=f2x-self.p*np.cos(self.O)
         
-        self.v = np.mean(Fx,axis=1)*self.mu
+#         self.v = np.mean(Fx,axis=1)*self.mu
+        self.v = np.sum(np.cos(self.O),axis=1)  #*self.mu
+
         
         Torque = self.l/2*(f2y*np.cos(self.O)+(f1x[:, 1:self.N_active+1]-f2x-self.p*np.cos(self.O))*np.sin(self.O))
         # update configuration
@@ -178,8 +196,8 @@ class Beads:     # OOP
         self.O+=self.mur*Torque*self.dt
 
         self.X = self.periodic(self.X)
-        self.O = np.amax(np.vstack([[self.O],[np.zeros((self.N_ensemble,self.N_active))]]),axis=0)
-        self.O = np.amin(np.vstack([[self.O],[(np.ones((self.N_ensemble,self.N_active))*np.pi)]]),axis=0)  
+        self.O = np.amax(np.vstack([[self.O],[np.ones((self.N_ensemble,self.N_active))*np.pi*1/20]]),axis=0)
+        self.O = np.amin(np.vstack([[self.O],[(np.ones((self.N_ensemble,self.N_active))*np.pi*19/20)]]),axis=0)  
 
 
         self.set_structure()
@@ -188,17 +206,31 @@ class Beads:     # OOP
         
     def animate(self,N_iter,directory):
         self.set_zero()
-        self.time_evolve()
         
         axrange = [-self.L/2, self.L/2, -self.L/100, self.L/10]
         
         #Setup plot for updated positions
-        fig1 = plt.figure()
-        ax1 = fig1.add_subplot(111)
-        ax1.scatter(self.X[0],np.zeros(self.N_ptcl),color='red')
+        fig1 = plt.figure(figsize=(6,8))
+        ax1 = fig1.add_subplot(311)
+        ax2 = fig1.add_subplot(312)
+        ax3 = fig1.add_subplot(313)
+
+
+        ax1.scatter(self.X[0],np.zeros(self.N_ptcl),color='red',edgecolors = 'black')
         ax1.scatter(self.Xs[0],self.Ys[0],color='blue')
         ax1.axis(axrange)
         ax1.set_aspect('equal','box')
+        
+        ax2.scatter(self.X[1],np.zeros(self.N_ptcl),color='red',edgecolors = 'black')
+        ax2.scatter(self.Xs[1],self.Ys[0],color='blue')
+        ax2.axis(axrange)
+        ax2.set_aspect('equal','box')
+        
+        ax3.scatter(self.X[2],np.zeros(self.N_ptcl),color='red',edgecolors = 'black')
+        ax3.scatter(self.Xs[2],self.Ys[0],color='blue')
+        ax3.axis(axrange)
+        ax3.set_aspect('equal','box')
+        
         fig1.show()
         fig1.tight_layout()
         fig1.canvas.draw()
@@ -210,11 +242,32 @@ class Beads:     # OOP
         for nn in trange(N_iter):
             
             ax1.clear()
-            ax1.scatter(self.X[0],np.zeros(self.N_ptcl),s=self.r_cut[0]**2*50000/self.L**2,color='red')
-            
-            ax1.scatter(self.Xs[0],self.Ys[0],s=self.r_cut[1]**2*50000/self.L**2,color='blue')
+            ax1.scatter(self.X[0][0],0,s=self.r_cut[0]**2*200000/self.L**2,color='red')
+            ax1.scatter(self.X[0][self.N_active+1:],np.zeros(self.N_ptcl-self.N_active-1),s=self.r_cut[0]**2*200000/self.L**2,color='red')
+            ax1.scatter(self.X[0][1:self.N_active+1],np.zeros(self.N_active),s=self.r_cut[1]**2*200000/self.L**2,color='red')
+            ax1.scatter(self.Xs[0],self.Ys[0],s=self.r_cut[2]**2*200000/self.L**2,color='blue')
             ax1.axis(axrange)
             ax1.set_aspect('equal', 'box')
+            
+            ax2.clear()
+            ax2.scatter(self.X[1][0],0,s=self.r_cut[0]**2*200000/self.L**2,color='red')
+            ax2.scatter(self.X[1][self.N_active+1:],np.zeros(self.N_ptcl-self.N_active-1),s=self.r_cut[0]**2*200000/self.L**2,color='red')
+            ax2.scatter(self.X[1][1:self.N_active+1],np.zeros(self.N_active),s=self.r_cut[1]**2*200000/self.L**2,color='red')
+            ax2.scatter(self.Xs[1],self.Ys[1],s=self.r_cut[2]**2*200000/self.L**2,color='blue')
+            ax2.axis(axrange)
+            ax2.set_aspect('equal', 'box')
+            
+            ax3.clear()
+            ax3.scatter(self.X[2][0],0,s=self.r_cut[0]**2*200000/self.L**2,color='red')
+            ax3.scatter(self.X[2][self.N_active+1:],np.zeros(self.N_ptcl-self.N_active-1),s=self.r_cut[0]**2*200000/self.L**2,color='red')
+            ax3.scatter(self.X[2][1:self.N_active+1],np.zeros(self.N_active),s=self.r_cut[1]**2*200000/self.L**2,color='red')
+            ax3.scatter(self.Xs[2],self.Ys[2],s=self.r_cut[2]**2*200000/self.L**2,color='blue')
+            ax3.axis(axrange)
+            ax3.set_aspect('equal', 'box')
+            
+            
+            
+            
             fig1.canvas.draw()
             if True:
                 fig1.savefig(str(os.getcwd())+'/record/'+str(directory)+'/'+str(nn)+'.png')
@@ -222,11 +275,23 @@ class Beads:     # OOP
                 self.time_evolve()
                 
     def measure(self,N_iter):
+        self.L = ((self.N_ptcl-self.N_active+1)*2*self.r_cut[0]+(self.N_active+1)*2*self.r_cut[1])
         self.set_zero
-        v_traj = np.zeros((self.N_ensemble,N_iter))
+        v_traj = np.zeros((self.N_ensemble,int(N_iter/4)))
+        
         for j in range(N_iter):
             self.time_evolve()
+        for j in range(int(N_iter/4)):
+            self.time_evolve()
             v_traj[:,j] = self.v
+#         v = np.abs(np.amax(v_traj[-int():],axis=1))
+        bins = np.linspace(-3,3,50)
+        count_sum = np.zeros(49)
+        for i in range(self.N_ensemble):
+            count,_,_=plt.hist(v_traj[i], bins)
+            count_sum+=count
+        plt.plot((bins[:-1]+bins[1:])/2,count_sum)
+        plt.show()
         v = np.abs(np.average(v_traj,axis=1))
         return v
         
