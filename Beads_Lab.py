@@ -54,7 +54,7 @@ class Beads:     # OOP
         self.k2 = 0.1
         self.l = 1    # length between fixed beads
         self.r_cut = [1.5,1.65,1.8]  # radius of beads [r1+r1,r1+r2,r2+r2]
-        self.g = 1
+        self.g = g
         
         
     # boundary condition
