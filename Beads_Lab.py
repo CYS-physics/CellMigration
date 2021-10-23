@@ -404,9 +404,9 @@ class Beads:     # OOP
             
             
         
-def time(N_active):
+def time(N_ptcl, N_active):
 
-    B1 = Beads(L=68, N_ptcl = 100,N_active = N_active,N_ensemble = 300,Fs=100,g=10)
+    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_ensemble = 300,Fs=100,g=10)
 
     B1.p = 100
     B1.D = 5  #5
@@ -421,7 +421,7 @@ def time(N_active):
 
     B1.L = ((B1.N_ptcl-B1.N_active+1)*2*B1.r_cut[0]+(B1.N_active+1)*2*B1.r_cut[1])*0.95
 
-    direc = '211023/g='+str(B1.g)
+    direc = '211023/N_ptcl='+str(B1.N_ptcl)
     os.makedirs(direc,exist_ok=True)
 
 
