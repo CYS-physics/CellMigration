@@ -329,9 +329,9 @@ class Beads:     # OOP
         
         Omin = np.arcsin((self.r_cut[2]-self.r_cut[1])/self.l)
         
-        prev_right = (np.cos(self.O[:,0])<-np.cos(Omin+np.pi/10))*(~(np.cos(self.O[:,-1])>np.cos(Omin+np.pi/20)))
-        prev_left = (np.cos(self.O[:,-1])>np.cos(Omin+np.pi/10))*(~(np.cos(self.O[:,0])<-np.cos(Omin+np.pi/20)))
-        prev_stuck = (np.cos(self.O[:,0])<-np.cos(Omin+np.pi/10))*(np.cos(self.O[:,-1])>np.cos(Omin+np.pi/20))
+        prev_right = (np.cos(self.O[:,0])<-np.cos(Omin+np.pi/20))*(~(np.cos(self.O[:,-1])>np.cos(Omin+np.pi/20)))
+        prev_left = (np.cos(self.O[:,-1])>np.cos(Omin+np.pi/20))*(~(np.cos(self.O[:,0])<-np.cos(Omin+np.pi/20)))
+        prev_stuck = (np.cos(self.O[:,0])<-np.cos(Omin+np.pi/20))*(np.cos(self.O[:,-1])>np.cos(Omin+np.pi/20))
         
 #         N_time = 40,
 
@@ -350,9 +350,9 @@ class Beads:     # OOP
             
     
             self.time_evolve()
-            right = (np.cos(self.O[:,0])<-np.cos(Omin+np.pi/10))*(~(np.cos(self.O[:,-1])>np.cos(Omin+np.pi/20)))
-            left = (np.cos(self.O[:,-1])>np.cos(Omin+np.pi/10))*(~(np.cos(self.O[:,0])<-np.cos(Omin+np.pi/20)))
-            stuck = (np.cos(self.O[:,0])<-np.cos(Omin+np.pi/10))*(np.cos(self.O[:,-1])>np.cos(Omin+np.pi/20))
+            right = (np.cos(self.O[:,0])<-np.cos(Omin+np.pi/20))*(~(np.cos(self.O[:,-1])>np.cos(Omin+np.pi/20)))
+            left = (np.cos(self.O[:,-1])>np.cos(Omin+np.pi/20))*(~(np.cos(self.O[:,0])<-np.cos(Omin+np.pi/20)))
+            stuck = (np.cos(self.O[:,0])<-np.cos(Omin+np.pi/20))*(np.cos(self.O[:,-1])>np.cos(Omin+np.pi/20))
         
         
             time = j*self.dt  #*N_time
@@ -406,12 +406,12 @@ class Beads:     # OOP
         
 def time(N_active):
 
-    B1 = Beads(L=68, N_ptcl = 100,N_active = N_active,N_ensemble = 300,Fs=500,g=10)
+    B1 = Beads(L=68, N_ptcl = 100,N_active = N_active,N_ensemble = 300,Fs=100,g=10)
 
     B1.p = 100
-    B1.D = 50  #5
-    B1.mu = 0.01
-    B1.mur = 0.01
+    B1.D = 5  #5
+    B1.mu = 0.03
+    B1.mur = 0.03
     B1.k1 = 20
     B1.k2 = 8
     B1.r_cut = [1.5,1.5,1.7]
@@ -421,12 +421,12 @@ def time(N_active):
 
     B1.L = ((B1.N_ptcl-B1.N_active+1)*2*B1.r_cut[0]+(B1.N_active+1)*2*B1.r_cut[1])*0.95
 
-    direc = '211022/g='+str(B1.g)
+    direc = '211023/g='+str(B1.g)
     os.makedirs(direc,exist_ok=True)
 
 
 
-    (right_in,left_in,stuck_in, right_out, left_out,stuck_out) = B1.transit(2000000)
+    (right_in,left_in,stuck_in, right_out, left_out,stuck_out) = B1.transit(400000)
 
     right_in =np.array(right_in)
     left_in = np.array(left_in)
