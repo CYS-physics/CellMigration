@@ -327,32 +327,36 @@ class Beads:     # OOP
 
         self.time_evolve()
         
-        Omin = np.arcsin((self.r_cut[2]-self.r_cut[1])/self.l)
+        prev_right = (self.v>0.5)
+        prev_left = (self.v<-0.5)
+        prev_stuck = (-0.5<=self.v)*(self.v<=0.5)
         
-        prev_right = (np.cos(self.O[:,0])<-np.cos(Omin+np.pi/20))*(~(np.cos(self.O[:,-1])>np.cos(Omin+np.pi/20)))
-        prev_left = (np.cos(self.O[:,-1])>np.cos(Omin+np.pi/20))*(~(np.cos(self.O[:,0])<-np.cos(Omin+np.pi/20)))
-        prev_stuck = (np.cos(self.O[:,0])<-np.cos(Omin+np.pi/20))*(np.cos(self.O[:,-1])>np.cos(Omin+np.pi/20))
+#         Omin = np.arcsin((self.r_cut[2]-self.r_cut[1])/self.l)+np.pi/20
         
-#         N_time = 40,
+#         prev_right = (np.cos(self.O[:,0])<-np.cos(Omin))*(~(np.cos(self.O[:,-1])>np.cos(Omin)))
+#         prev_left = (np.cos(self.O[:,-1])>np.cos(Omin))*(~(np.cos(self.O[:,0])<-np.cos(Omin)))
+#         prev_stuck = (np.cos(self.O[:,0])<-np.cos(Omin))*(np.cos(self.O[:,-1])>np.cos(Omin))
+        
+        N_time = 40
 
         for j in trange(N_iter):
-#             v_temp = self.v
-#             for _ in range(N_time-1):
-#                 self.time_evolve()
-#                 v_temp += self.v
-#             v_temp/=N_time
+            v_temp = self.v
+            for _ in range(N_time-1):
+                self.time_evolve()
+                v_temp += self.v
+            v_temp/=N_time
             
             
-#             self.time_evolve()
-#             right = (v_temp>0.5)
-#             left = (v_temp<-0.5)
-#             stuck = (-0.5<=v_temp)*(v_temp<=0.5)
+            self.time_evolve()
+            right = (v_temp>0.5)
+            left = (v_temp<-0.5)
+            stuck = (-0.5<=v_temp)*(v_temp<=0.5)
             
     
-            self.time_evolve()
-            right = (np.cos(self.O[:,0])<-np.cos(Omin+np.pi/20))*(~(np.cos(self.O[:,-1])>np.cos(Omin+np.pi/20)))
-            left = (np.cos(self.O[:,-1])>np.cos(Omin+np.pi/20))*(~(np.cos(self.O[:,0])<-np.cos(Omin+np.pi/20)))
-            stuck = (np.cos(self.O[:,0])<-np.cos(Omin+np.pi/20))*(np.cos(self.O[:,-1])>np.cos(Omin+np.pi/20))
+#             self.time_evolve()
+#             right = (np.cos(self.O[:,0])<-np.cos(Omin))*(~(np.cos(self.O[:,-1])>np.cos(Omin)))
+#             left = (np.cos(self.O[:,-1])>np.cos(Omin))*(~(np.cos(self.O[:,0])<-np.cos(Omin)))
+#             stuck = (np.cos(self.O[:,0])<-np.cos(Omin))*(np.cos(self.O[:,-1])>np.cos(Omin))
         
         
             time = j*self.dt  #*N_time
