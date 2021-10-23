@@ -430,7 +430,7 @@ def time(N_ptcl, N_active):
 
 
 
-    (right_in,left_in,stuck_in, right_out, left_out,stuck_out) = B1.transit(400000)
+    (right_in,left_in,stuck_in, right_out, left_out,stuck_out) = B1.transit(200000)
 
     right_in =np.array(right_in)
     left_in = np.array(left_in)
