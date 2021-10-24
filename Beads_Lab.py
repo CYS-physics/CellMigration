@@ -328,7 +328,7 @@ class Beads:     # OOP
 
 
     def transit(self,N_iter):
-        self.set_zero()
+        self.set_zero((np.ones(self.N_ensemble)==np.ones(self.N_ensemble)))
 #         right_in = [np.zeros(0)]*self.N_ensemble
 #         left_in = [np.zeros(0)]*self.N_ensemble
 #         stuck_in = [np.zeros(0)]*self.N_ensemble
@@ -347,9 +347,9 @@ class Beads:     # OOP
         
         Othres = self.Omin+np.pi/50
         
-#         prev_right = (np.cos(self.O[:,0])<-np.cos(Othres))*(~(np.cos(self.O[:,-1])>np.cos(Othres)))
-#         prev_left = (np.cos(self.O[:,-1])>np.cos(Othres))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
-#         prev_stuck = (np.cos(self.O[:,0])<-np.cos(Othres))*(np.cos(self.O[:,-1])>np.cos(Othres))
+        prev_right = (np.cos(self.O[:,0])<-np.cos(Othres))*(~(np.cos(self.O[:,-1])>np.cos(Othres)))
+        prev_left = (np.cos(self.O[:,-1])>np.cos(Othres))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
+        prev_stuck = (np.cos(self.O[:,0])<-np.cos(Othres))*(np.cos(self.O[:,-1])>np.cos(Othres))
         time = 0
         
 #         for i in range(self.N_ensemble):
