@@ -448,7 +448,7 @@ class Beads:     # OOP
         
 def time(N_ptcl, N_active):
 
-    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_ensemble = 300,Fs=100,g=10)
+    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_ensemble = 500,Fs=100,g=10)
 
     B1.p = 100
     B1.D = 5  #5
