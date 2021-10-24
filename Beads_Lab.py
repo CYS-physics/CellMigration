@@ -20,7 +20,11 @@ class Beads:     # OOP
         self.set_coeff(L,N_ptcl,N_active,N_ensemble,Fs,g) 
       
         # initializing configuration of state
-        self.set_zero()
+        self.X = np.ones(self.N_ensemble).reshape(-1,1)*np.linspace(0,self.L,self.N_ptcl+1)[:self.N_ptcl].reshape(1,-1)
+        self.O = np.ones((self.N_ensemble,self.N_active))*np.pi/2
+        self.set_zero((np.ones(N_ensemble)==np.ones(N_ensemble)))
+        
+        
         
         
         
@@ -56,6 +60,8 @@ class Beads:     # OOP
         self.r_cut = [1.5,1.65,1.8]  # radius of beads [r1+r1,r1+r2,r2+r2]
         self.g = g
         
+        
+        
         self.Omin = np.arcsin((self.r_cut[2]-self.r_cut[1])/self.l)
         
     # boundary condition
@@ -68,17 +74,17 @@ class Beads:     # OOP
         
         
     # Dynamics part
-    def set_zero(self):              # initializing simulation configurations
+    def set_zero(self,flag):              # initializing simulation configurations
         
 #         self.X = np.ones(self.N_ensemble).reshape(-1,1)*np.linspace(0,self.L,self.N_ptcl+1)[:self.N_ptcl].reshape(1,-1)
-        self.X = np.zeros((self.N_ensemble,self.N_ptcl))
+        self.X[flag]= np.zeros((np.sum(flag),self.N_ptcl))
         
         l1 = self.r_cut[0]*(self.N_ptcl-self.N_active)
         l2 = self.r_cut[1]*(self.N_active)
-        self.X[:,1:self.N_active+1] = np.ones(self.N_ensemble).reshape(-1,1)*np.linspace(0,self.L*(l2/(l1+l2)),self.N_active+1)[1:].reshape(1,-1)# active ones
-        self.X[:,self.N_active+1:] = np.ones(self.N_ensemble).reshape(-1,1)*np.linspace(self.L*(l2/(l1+l2)),self.L,self.N_ptcl-self.N_active+1)[1:-1].reshape(1,-1)     # passive ones
+        self.X[flag,1:self.N_active+1] = np.ones(np.sum(flag)).reshape(-1,1)*np.linspace(0,self.L*(l2/(l1+l2)),self.N_active+1)[1:].reshape(1,-1)# active ones
+        self.X[flag,self.N_active+1:] = np.ones(np.sum(flag)).reshape(-1,1)*np.linspace(self.L*(l2/(l1+l2)),self.L,self.N_ptcl-self.N_active+1)[1:-1].reshape(1,-1)     # passive ones
         
-        self.O = np.ones((self.N_ensemble,self.N_active))*np.pi/2
+        self.O[flag] = np.ones((np.sum(flag),self.N_active))*np.pi/2
         
         self.set_structure()
         
@@ -222,7 +228,7 @@ class Beads:     # OOP
     
         
     def animate(self,N_iter,directory):
-        self.set_zero()
+        self.set_zero((np.ones(self.N_ensemble)==np.ones(self.N_ensemble)))
         
         axrange = [-self.L/2, self.L/2, -self.L/100, self.L/10]
         
@@ -254,6 +260,7 @@ class Beads:     # OOP
         
         os.makedirs('record/'+str(directory),exist_ok=True)
         self.time_evolve()
+        Othres = self.Omin+np.pi/50
         
         
         for nn in trange(N_iter):
@@ -295,6 +302,8 @@ class Beads:     # OOP
                 fig1.savefig(str(os.getcwd())+'/record/'+str(directory)+'/'+str(nn)+'.png')
             for _ in range(self.N_skip):
                 self.time_evolve()
+            stuck = (np.cos(self.O[:,0])<-np.cos(Othres))*(np.cos(self.O[:,-1])>np.cos(Othres))
+            self.set_zero(stuck)
                 
     def measure(self,N_iter,initialize):
         if initialize:
@@ -317,14 +326,17 @@ class Beads:     # OOP
 #         v = np.abs(np.average(v_traj,axis=1))
         return v_traj
 
+
     def transit(self,N_iter):
         self.set_zero()
-        right_in = [np.zeros(0)]*self.N_ensemble
-        left_in = [np.zeros(0)]*self.N_ensemble
-        stuck_in = [np.zeros(0)]*self.N_ensemble
-        right_out = [np.zeros(0)]*self.N_ensemble
-        left_out = [np.zeros(0)]*self.N_ensemble
-        stuck_out = [np.zeros(0)]*self.N_ensemble
+#         right_in = [np.zeros(0)]*self.N_ensemble
+#         left_in = [np.zeros(0)]*self.N_ensemble
+#         stuck_in = [np.zeros(0)]*self.N_ensemble
+#         right_out = [np.zeros(0)]*self.N_ensemble
+#         left_out = [np.zeros(0)]*self.N_ensemble
+#         stuck_out = [np.zeros(0)]*self.N_ensemble
+        move_in = [np.zeros(0)]*self.N_ensemble
+        move_out = [np.zeros(0)]*self.N_ensemble
 
         self.time_evolve()
         
@@ -333,22 +345,22 @@ class Beads:     # OOP
 #         prev_stuck = (-0.5<=self.v)*(self.v<=0.5)
         
         
-        Othres = self.Omin+np.pi/20
+        Othres = self.Omin+np.pi/50
         
-        prev_right = (np.cos(self.O[:,0])<-np.cos(Othres))*(~(np.cos(self.O[:,-1])>np.cos(Othres)))
-        prev_left = (np.cos(self.O[:,-1])>np.cos(Othres))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
-        prev_stuck = (np.cos(self.O[:,0])<-np.cos(Othres))*(np.cos(self.O[:,-1])>np.cos(Othres))
+#         prev_right = (np.cos(self.O[:,0])<-np.cos(Othres))*(~(np.cos(self.O[:,-1])>np.cos(Othres)))
+#         prev_left = (np.cos(self.O[:,-1])>np.cos(Othres))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
+#         prev_stuck = (np.cos(self.O[:,0])<-np.cos(Othres))*(np.cos(self.O[:,-1])>np.cos(Othres))
         time = 0
         
-        for i in range(self.N_ensemble):
-            if prev_right[i]:
-                right_in[i] = np.append(right_in[i],time)
-            elif prev_left[i]:
-                left_in[i] = np.append(left_in[i],time)
-            elif prev_stuck[i]:
-                stuck_in[i] = np.append(stuck_in[i],time)
+#         for i in range(self.N_ensemble):
+#             if prev_right[i]:
+#                 right_in[i] = np.append(right_in[i],time)
+#             elif prev_left[i]:
+#                 left_in[i] = np.append(left_in[i],time)
+#             elif prev_stuck[i]:
+#                 stuck_in[i] = np.append(stuck_in[i],time)
         
-    
+        
     
 #         N_time = 40
 
@@ -389,20 +401,30 @@ class Beads:     # OOP
 #             bool_so = (~ stuck)&(prev_stuck)
 #             stuck_out[bool_so] = np.append(stuck_out[bool_so],time*np.ones(np.sum(bool_so)).reshape(-1,1),axis=1)
             
+#             for i in range(self.N_ensemble):
+#                 if right[i]*(not prev_right[i]):
+#                     right_in[i] = np.append(right_in[i],time)
+#                 elif left[i]*(not prev_left[i]):
+#                     left_in[i] = np.append(left_in[i],time)
+#                 elif stuck[i]*(not prev_stuck[i]):
+#                     stuck_in[i] = np.append(stuck_in[i],time)
+                    
+#                 if (not right[i])*(prev_right[i]):
+#                     right_out[i] = np.append(right_out[i],time)
+#                 elif (not left[i])*(prev_left[i]):
+#                     left_out[i] = np.append(left_out[i],time)
+#                 elif (not stuck[i])*(prev_stuck[i]):
+#                     stuck_out[i] = np.append(stuck_out[i],time)
+                    
             for i in range(self.N_ensemble):
                 if right[i]*(not prev_right[i]):
-                    right_in[i] = np.append(right_in[i],time)
+                    move_in[i] = np.append(move_in[i],time)
                 elif left[i]*(not prev_left[i]):
-                    left_in[i] = np.append(left_in[i],time)
+                    move_in[i] = np.append(move_in[i],time)
                 elif stuck[i]*(not prev_stuck[i]):
-                    stuck_in[i] = np.append(stuck_in[i],time)
-                    
-                if (not right[i])*(prev_right[i]):
-                    right_out[i] = np.append(right_out[i],time)
-                elif (not left[i])*(prev_left[i]):
-                    left_out[i] = np.append(left_out[i],time)
-                elif (not stuck[i])*(prev_stuck[i]):
-                    stuck_out[i] = np.append(stuck_out[i],time)
+                    move_out[i] = np.append(move_out[i],time)
+            self.set_zero(stuck)
+            
                     
             prev_right = right
             prev_left = left
@@ -410,14 +432,17 @@ class Beads:     # OOP
         time +=self.dt
         for i in range(self.N_ensemble):
             if right[i]:
-                right_out[i] = np.append(right_out[i],time)
+                move_out[i] = np.append(move_out[i],time)
             elif left[i]:
-                left_out[i] = np.append(left_out[i],time)
-            elif stuck[i]:
-                stuck_out[i] = np.append(stuck_out[i],time)
+                move_out[i] = np.append(move_out[i],time)
+#             elif stuck[i]:
+#                 stuck_out[i] = np.append(stuck_out[i],time)
 
-        return(right_in,left_in,stuck_in, right_out, left_out,stuck_out)
-            
+#         return(right_in,left_in,stuck_in, right_out, left_out,stuck_out)
+
+        return(move_in, move_out)
+
+
             
             
         
@@ -439,27 +464,33 @@ def time(N_ptcl, N_active):
 
     B1.L = ((B1.N_ptcl-B1.N_active+1)*2*B1.r_cut[0]+(B1.N_active+1)*2*B1.r_cut[1])*0.95
 
-    direc = '211024/N_ptcl='+str(B1.N_ptcl)
+    direc = '211024/reset_N_ptcl='+str(B1.N_ptcl)
     os.makedirs(direc,exist_ok=True)
 
 
 
-    (right_in,left_in,stuck_in, right_out, left_out,stuck_out) = B1.transit(200000)
+#     (right_in,left_in,stuck_in, right_out, left_out,stuck_out) = B1.transit(200000)
+    (move_in,move_out) = B1.transit(200000)
 
-    right_in =np.array(right_in)
-    left_in = np.array(left_in)
-    stuck_in = np.array(stuck_in)
-    right_out =np.array(right_out)
-    left_out = np.array(left_out)
-    stuck_out = np.array(stuck_out)
+
+#     right_in =np.array(right_in)
+#     left_in = np.array(left_in)
+#     stuck_in = np.array(stuck_in)
+#     right_out =np.array(right_out)
+#     left_out = np.array(left_out)
+#     stuck_out = np.array(stuck_out)
+    move_in = np.array(move_in)
+    move_out =np.array(move_out)
 
     save_dict={}
-    save_dict['right_in'] = right_in
-    save_dict['left_in'] = left_in
-    save_dict['stuck_in'] = stuck_in
-    save_dict['right_out'] = right_out
-    save_dict['left_out'] = left_out
-    save_dict['stuck_out'] = stuck_out
+#     save_dict['right_in'] = right_in
+#     save_dict['left_in'] = left_in
+#     save_dict['stuck_in'] = stuck_in
+#     save_dict['right_out'] = right_out
+#     save_dict['left_out'] = left_out
+#     save_dict['stuck_out'] = stuck_out
+    save_dict['move_in'] = move_in
+    save_dict['move_out'] = move_out
     
     np.savez(direc+'/N'+str(B1.N_active)+'.npz', **save_dict)
 
