@@ -335,9 +335,9 @@ class Beads:     # OOP
         
         Othres = self.Omin+np.pi/20
         
-        prev_right = (np.cos(self.O[:,0])<-np.cos(Omin))*(~(np.cos(self.O[:,-1])>np.cos(Othres)))
-        prev_left = (np.cos(self.O[:,-1])>np.cos(Omin))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
-        prev_stuck = (np.cos(self.O[:,0])<-np.cos(Omin))*(np.cos(self.O[:,-1])>np.cos(Othres))
+        prev_right = (np.cos(self.O[:,0])<-np.cos(Othres))*(~(np.cos(self.O[:,-1])>np.cos(Othres)))
+        prev_left = (np.cos(self.O[:,-1])>np.cos(Othres))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
+        prev_stuck = (np.cos(self.O[:,0])<-np.cos(Othres))*(np.cos(self.O[:,-1])>np.cos(Othres))
         time = 0
         
         for i in range(self.N_ensemble):
@@ -367,9 +367,9 @@ class Beads:     # OOP
             
     
             self.time_evolve()
-            right = (np.cos(self.O[:,0])<-np.cos(Omin))*(~(np.cos(self.O[:,-1])>np.cos(Othres)))
-            left = (np.cos(self.O[:,-1])>np.cos(Omin))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
-            stuck = (np.cos(self.O[:,0])<-np.cos(Omin))*(np.cos(self.O[:,-1])>np.cos(Othres))
+            right = (np.cos(self.O[:,0])<-np.cos(Othres))*(~(np.cos(self.O[:,-1])>np.cos(Othres)))
+            left = (np.cos(self.O[:,-1])>np.cos(Othres))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
+            stuck = (np.cos(self.O[:,0])<-np.cos(Othres))*(np.cos(self.O[:,-1])>np.cos(Othres))
         
         
             time = j*self.dt#*N_time
