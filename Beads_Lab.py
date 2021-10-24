@@ -423,6 +423,8 @@ class Beads:     # OOP
                     move_in[i] = np.append(move_in[i],time)
                 elif stuck[i]*(not prev_stuck[i]):
                     move_out[i] = np.append(move_out[i],time)
+#             self.set_zero(right)
+#             self.set_zero(left)
             self.set_zero(stuck)
             
                     
@@ -441,6 +443,9 @@ class Beads:     # OOP
 #         return(right_in,left_in,stuck_in, right_out, left_out,stuck_out)
 
         return(move_in, move_out)
+#         return(move_in)
+
+
 
 
             
@@ -448,7 +453,7 @@ class Beads:     # OOP
         
 def time(N_ptcl, N_active):
 
-    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_ensemble = 500,Fs=100,g=10)
+    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_ensemble = 1500,Fs=100,g=10)
 
     B1.p = 100
     B1.D = 5  #5
@@ -464,13 +469,15 @@ def time(N_ptcl, N_active):
 
     B1.L = ((B1.N_ptcl-B1.N_active+1)*2*B1.r_cut[0]+(B1.N_active+1)*2*B1.r_cut[1])*0.95
 
-    direc = '211024/reset_N_ptcl='+str(B1.N_ptcl)
+    direc = '211025/reset_N_ptcl='+str(B1.N_ptcl)
     os.makedirs(direc,exist_ok=True)
 
 
 
 #     (right_in,left_in,stuck_in, right_out, left_out,stuck_out) = B1.transit(200000)
-    (move_in,move_out) = B1.transit(200000)
+    (move_in,move_out) = B1.transit(600000)
+#     (move_in) = B1.transit(1000)
+
 
 
 #     right_in =np.array(right_in)
@@ -479,8 +486,8 @@ def time(N_ptcl, N_active):
 #     right_out =np.array(right_out)
 #     left_out = np.array(left_out)
 #     stuck_out = np.array(stuck_out)
-    move_in = np.array(move_in)
-    move_out =np.array(move_out)
+#     move_in = np.array(move_in)
+#     move_out =np.array(move_out)
 
     save_dict={}
 #     save_dict['right_in'] = right_in
