@@ -421,7 +421,7 @@ class Beads:     # OOP
                     move_in[i] = np.append(move_in[i],time)
                 elif left[i]*(not prev_left[i]):
                     move_in[i] = np.append(move_in[i],time)
-                elif stuck[i]*(not prev_stuck[i]):
+                elif stuck[i]*(prev_right[i] or prev_left[i]):
                     move_out[i] = np.append(move_out[i],time)
             self.set_zero(stuck)
             
@@ -429,12 +429,15 @@ class Beads:     # OOP
             prev_right = right
             prev_left = left
             prev_stuck = stuck
+            
+            
         time +=self.dt
         for i in range(self.N_ensemble):
             if right[i]:
                 move_out[i] = np.append(move_out[i],time)
             elif left[i]:
                 move_out[i] = np.append(move_out[i],time)
+        
 #             elif stuck[i]:
 #                 stuck_out[i] = np.append(stuck_out[i],time)
 
