@@ -467,7 +467,7 @@ def time(N_ptcl, N_active):
 
     B1.L = ((B1.N_ptcl-B1.N_active+1)*2*B1.r_cut[0]+(B1.N_active+1)*2*B1.r_cut[1])*0.95
 
-    direc = '211025_1/fast_N_ptcl='+str(B1.N_ptcl)
+    direc = '211025_2/fast_N_ptcl='+str(B1.N_ptcl)
     os.makedirs(direc,exist_ok=True)
 
 
