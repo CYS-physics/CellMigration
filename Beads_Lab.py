@@ -380,7 +380,7 @@ class Beads:     # OOP
             
     
             self.time_evolve()
-            v_sum += np.abs(self.v)
+            v_sum += np.abs(self.v*(right or left))
             right = (np.cos(self.O[:,0])<-np.cos(Othres))*(~(np.cos(self.O[:,-1])>np.cos(Othres)))
             left = (np.cos(self.O[:,-1])>np.cos(Othres))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
             stuck = (np.cos(self.O[:,0])<-np.cos(Othres))*(np.cos(self.O[:,-1])>np.cos(Othres))
@@ -469,7 +469,7 @@ def time(N_ptcl, N_active,g):
 
     B1.L = ((B1.N_ptcl-B1.N_active+1)*2*B1.r_cut[0]+(B1.N_active+1)*2*B1.r_cut[1])*0.95
 
-    direc = '211026/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)
+    direc = '211026_v/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)
     os.makedirs(direc,exist_ok=True)
 
 
