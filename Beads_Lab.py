@@ -364,7 +364,7 @@ class Beads:     # OOP
     
 #         N_time = 40
 
-        v_sum = 0
+        v_sum = np.zeros(self.N_ensemble)
         for j in trange(N_iter):
 #             v_temp = self.v
 #             for _ in range(N_time-1):
@@ -380,7 +380,7 @@ class Beads:     # OOP
             
     
             self.time_evolve()
-            v_sum += np.average(np.abs(self.v))
+            v_sum += np.abs(self.v)
             right = (np.cos(self.O[:,0])<-np.cos(Othres))*(~(np.cos(self.O[:,-1])>np.cos(Othres)))
             left = (np.cos(self.O[:,-1])>np.cos(Othres))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
             stuck = (np.cos(self.O[:,0])<-np.cos(Othres))*(np.cos(self.O[:,-1])>np.cos(Othres))
@@ -476,7 +476,7 @@ def time(N_ptcl, N_active,g):
 
 #     (right_in,left_in,stuck_in, right_out, left_out,stuck_out) = B1.transit(200000)
     N_simul = 1000000
-    (move_in,move_out) = B1.transit(N_simul)
+    (move_in,move_out,v_sum) = B1.transit(N_simul)
 
 
 #     right_in =np.array(right_in)
@@ -503,6 +503,7 @@ def time(N_ptcl, N_active,g):
     save_dict['N_active'] = B1.N_active
     save_dict['dt'] = B1.dt
     save_dict['N_simul'] = N_simul
+    save_dict['v_sum'] = v_sum/N_simul
     
     np.savez(direc+'/N'+str(B1.N_active)+'.npz', **save_dict)
 
