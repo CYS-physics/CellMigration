@@ -364,6 +364,7 @@ class Beads:     # OOP
     
 #         N_time = 40
 
+        v_sum = 0
         for j in trange(N_iter):
 #             v_temp = self.v
 #             for _ in range(N_time-1):
@@ -379,6 +380,7 @@ class Beads:     # OOP
             
     
             self.time_evolve()
+            v_sum += np.average(np.abs(self.v))
             right = (np.cos(self.O[:,0])<-np.cos(Othres))*(~(np.cos(self.O[:,-1])>np.cos(Othres)))
             left = (np.cos(self.O[:,-1])>np.cos(Othres))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
             stuck = (np.cos(self.O[:,0])<-np.cos(Othres))*(np.cos(self.O[:,-1])>np.cos(Othres))
@@ -443,15 +445,15 @@ class Beads:     # OOP
 
 #         return(right_in,left_in,stuck_in, right_out, left_out,stuck_out)
 
-        return(move_in, move_out)
+        return(move_in, move_out,v_sum)
 
 
             
             
         
-def time(N_ptcl, N_active):
+def time(N_ptcl, N_active,g):
 
-    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_ensemble = 300,Fs=500,g=10)
+    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_ensemble = 300,Fs=500,g=g)
 
     B1.p = 100
     B1.D = 20  #5
@@ -467,13 +469,14 @@ def time(N_ptcl, N_active):
 
     B1.L = ((B1.N_ptcl-B1.N_active+1)*2*B1.r_cut[0]+(B1.N_active+1)*2*B1.r_cut[1])*0.95
 
-    direc = '211025_2/fast_N_ptcl='+str(B1.N_ptcl)
+    direc = '211026/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)
     os.makedirs(direc,exist_ok=True)
 
 
 
 #     (right_in,left_in,stuck_in, right_out, left_out,stuck_out) = B1.transit(200000)
-    (move_in,move_out) = B1.transit(1000000)
+    N_simul = 1000000
+    (move_in,move_out) = B1.transit(N_simul)
 
 
 #     right_in =np.array(right_in)
@@ -493,7 +496,13 @@ def time(N_ptcl, N_active):
 #     save_dict['left_out'] = left_out
 #     save_dict['stuck_out'] = stuck_out
     save_dict['move_in'] = move_in
-    save_dict['move_out'] = move_out
+    save_dict['move_out'] = move_out 
+    
+    save_dict['N_ens'] = B1.N_ensemble
+    save_dict['N_total'] = B1.N_ptcl
+    save_dict['N_active'] = B1.N_active
+    save_dict['dt'] = B1.dt
+    save_dict['N_simul'] = N_simul
     
     np.savez(direc+'/N'+str(B1.N_active)+'.npz', **save_dict)
 
