@@ -380,11 +380,11 @@ class Beads:     # OOP
             
     
             self.time_evolve()
-            v_sum += np.abs(self.v*(right or left))
+            
             right = (np.cos(self.O[:,0])<-np.cos(Othres))*(~(np.cos(self.O[:,-1])>np.cos(Othres)))
             left = (np.cos(self.O[:,-1])>np.cos(Othres))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
             stuck = (np.cos(self.O[:,0])<-np.cos(Othres))*(np.cos(self.O[:,-1])>np.cos(Othres))
-        
+            v_sum += np.abs(self.v)*(~(~right)*(~left))
         
             time = j*self.dt#*N_time
             
