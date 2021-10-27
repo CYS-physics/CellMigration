@@ -329,21 +329,13 @@ class Beads:     # OOP
 
     def transit(self,N_iter):
         self.set_zero((np.ones(self.N_ensemble)==np.ones(self.N_ensemble)))
-#         right_in = [np.zeros(0)]*self.N_ensemble
-#         left_in = [np.zeros(0)]*self.N_ensemble
-#         stuck_in = [np.zeros(0)]*self.N_ensemble
-#         right_out = [np.zeros(0)]*self.N_ensemble
-#         left_out = [np.zeros(0)]*self.N_ensemble
-#         stuck_out = [np.zeros(0)]*self.N_ensemble
+        
         move_in = [np.zeros(0)]*self.N_ensemble
         move_out = [np.zeros(0)]*self.N_ensemble
+        count = 0
+        age = np.zeros(self.N_ensemble,dtype = np.int)
 
         self.time_evolve()
-        
-#         prev_right = (self.v>0.5)
-#         prev_left = (self.v<-0.5)
-#         prev_stuck = (-0.5<=self.v)*(self.v<=0.5)
-        
         
         Othres = self.Omin+np.pi/50
         
@@ -351,32 +343,11 @@ class Beads:     # OOP
         prev_left = (np.cos(self.O[:,-1])>np.cos(Othres))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
         prev_stuck = (np.cos(self.O[:,0])<-np.cos(Othres))*(np.cos(self.O[:,-1])>np.cos(Othres))
         time = 0
-        
-#         for i in range(self.N_ensemble):
-#             if prev_right[i]:
-#                 right_in[i] = np.append(right_in[i],time)
-#             elif prev_left[i]:
-#                 left_in[i] = np.append(left_in[i],time)
-#             elif prev_stuck[i]:
-#                 stuck_in[i] = np.append(stuck_in[i],time)
-        
-        
-    
-#         N_time = 40
 
-        v_sum = np.zeros(self.N_ensemble)
+        v1_t = np.zeros(N_iter)
+        v2_t = np.zeros(N_iter)
         for j in trange(N_iter):
-#             v_temp = self.v
-#             for _ in range(N_time-1):
-#                 self.time_evolve()
-#                 v_temp += self.v
-#             v_temp/=N_time
-            
-            
-#             self.time_evolve()
-#             right = (v_temp>0.5)
-#             left = (v_temp<-0.5)
-#             stuck = (-0.5<=v_temp)*(v_temp<=0.5)
+#          
             
     
             self.time_evolve()
@@ -384,48 +355,31 @@ class Beads:     # OOP
             right = (np.cos(self.O[:,0])<-np.cos(Othres))*(~(np.cos(self.O[:,-1])>np.cos(Othres)))
             left = (np.cos(self.O[:,-1])>np.cos(Othres))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
             stuck = (np.cos(self.O[:,0])<-np.cos(Othres))*(np.cos(self.O[:,-1])>np.cos(Othres))
-            v_sum += np.abs(self.v)*(~(~right)*(~left))
         
             time = j*self.dt#*N_time
             
     
     
-#             bool_ri = right&(~ prev_right)
-#             right_in[bool_ri] = np.append(right_in[bool_ri],time*np.ones(np.sum(bool_ri)).reshape(-1,1),axis=1)
-#             bool_li = left&(~ prev_left)
-#             left_in[bool_li] = np.append(left_in[bool_li],time*np.ones(np.sum(bool_li)).reshape(-1,1),axis=1)
-#             bool_si = stuck&(~ prev_stuck)
-#             stuck_in[bool_si] = np.append(stuck_in[bool_si],time*np.ones(np.sum(bool_si)).reshape(-1,1),axis=1)
-#             bool_ro = (~ right)&(prev_right)
-#             right_out[bool_ro] = np.append(right_out[bool_ro],time*np.ones(np.sum(bool_ro)).reshape(-1,1),axis=1)
-#             bool_lo = (~ left)&(prev_left)
-#             left_out[bool_lo] = np.append(left_out[bool_lo],time*np.ones(np.sum(bool_lo)).reshape(-1,1),axis=1)
-#             bool_so = (~ stuck)&(prev_stuck)
-#             stuck_out[bool_so] = np.append(stuck_out[bool_so],time*np.ones(np.sum(bool_so)).reshape(-1,1),axis=1)
-            
-#             for i in range(self.N_ensemble):
-#                 if right[i]*(not prev_right[i]):
-#                     right_in[i] = np.append(right_in[i],time)
-#                 elif left[i]*(not prev_left[i]):
-#                     left_in[i] = np.append(left_in[i],time)
-#                 elif stuck[i]*(not prev_stuck[i]):
-#                     stuck_in[i] = np.append(stuck_in[i],time)
-                    
-#                 if (not right[i])*(prev_right[i]):
-#                     right_out[i] = np.append(right_out[i],time)
-#                 elif (not left[i])*(prev_left[i]):
-#                     left_out[i] = np.append(left_out[i],time)
-#                 elif (not stuck[i])*(prev_stuck[i]):
-#                     stuck_out[i] = np.append(stuck_out[i],time)
                     
             for i in range(self.N_ensemble):
-                if right[i]*(not prev_right[i]):
-                    move_in[i] = np.append(move_in[i],time)
-                elif left[i]*(not prev_left[i]):
-                    move_in[i] = np.append(move_in[i],time)
+                if right[i]:
+                    if(not prev_right[i]):
+                        move_in[i] = np.append(move_in[i],time)
+                        age[i] = 0
+                        count+=1
+                    v1_t[age[i]]+=np.abs(self.v[i])
+                    v2_t[age[i]]+=self.v[i]**2
+                elif left[i]:
+                    if (not prev_left[i]):
+                        move_in[i] = np.append(move_in[i],time)
+                        age[i] = 0   
+                        count+=1
+                    v1_t[age[i]]+=np.abs(self.v[i])
+                    v2_t[age[i]]+=self.v[i]**2
                 elif stuck[i]*(prev_right[i] or prev_left[i]):
                     move_out[i] = np.append(move_out[i],time)
             self.set_zero(stuck)
+            age +=1
             
                     
             prev_right = right
@@ -440,15 +394,19 @@ class Beads:     # OOP
             elif left[i]:
                 move_out[i] = np.append(move_out[i],time)
         
+        
+        v_t_avg = v1_t/count
+        v_t_var = v2_t/count-(v1_t/count)**2
+        
 #             elif stuck[i]:
 #                 stuck_out[i] = np.append(stuck_out[i],time)
 
 #         return(right_in,left_in,stuck_in, right_out, left_out,stuck_out)
 
-        return(move_in, move_out,v_sum)
+        return(move_in, move_out,v_t_avg,v_t_var)
 
 
-            
+          
             
         
 def time(N_ptcl, N_active,g):
@@ -469,14 +427,14 @@ def time(N_ptcl, N_active,g):
 
     B1.L = ((B1.N_ptcl-B1.N_active+1)*2*B1.r_cut[0]+(B1.N_active+1)*2*B1.r_cut[1])*0.95
 
-    direc = '211026_v/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)
+    direc = '211026_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)
     os.makedirs(direc,exist_ok=True)
 
 
 
 #     (right_in,left_in,stuck_in, right_out, left_out,stuck_out) = B1.transit(200000)
     N_simul = 1000000
-    (move_in,move_out,v_sum) = B1.transit(N_simul)
+    (move_in,move_out,v_t_avg,v_t_var) = B1.transit(N_simul)
 
 
 #     right_in =np.array(right_in)
@@ -503,7 +461,8 @@ def time(N_ptcl, N_active,g):
     save_dict['N_active'] = B1.N_active
     save_dict['dt'] = B1.dt
     save_dict['N_simul'] = N_simul
-    save_dict['v_sum'] = v_sum/N_simul
+    save_dict['v_t_avg'] = v_t_avg
+    save_dict['v_t_var'] = v_t_var
     
     np.savez(direc+'/N'+str(B1.N_active)+'.npz', **save_dict)
 
