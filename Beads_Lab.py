@@ -398,6 +398,7 @@ class Beads:     # OOP
         v_t_avg = v1_t/count
         v_t_var = v2_t/count-(v1_t/count)**2
         
+        
 #             elif stuck[i]:
 #                 stuck_out[i] = np.append(stuck_out[i],time)
 
@@ -409,12 +410,12 @@ class Beads:     # OOP
           
             
         
-def time(N_ptcl, N_active,g):
+def time(N_ptcl, N_active,g,D):
 
     B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_ensemble = 300,Fs=500,g=g)
 
     B1.p = 100
-    B1.D = 20  #5
+    B1.D = D  #20
     B1.mu = 0.03
     B1.mur = 0.03
     B1.k1 = 20
@@ -427,7 +428,7 @@ def time(N_ptcl, N_active,g):
 
     B1.L = ((B1.N_ptcl-B1.N_active+1)*2*B1.r_cut[0]+(B1.N_active+1)*2*B1.r_cut[1])*0.95
 
-    direc = '211026_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)
+    direc = '211026_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)+',D='+str(B1.D)
     os.makedirs(direc,exist_ok=True)
 
 
