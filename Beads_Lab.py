@@ -462,7 +462,7 @@ def time(N_ptcl, N_active,g,D):
 
 
 #     (right_in,left_in,stuck_in, right_out, left_out,stuck_out) = B1.transit(200000)
-    N_simul = 1000000
+    N_simul = 3000000
     (move_in,move_out,v_t_avg,v_t_var) = B1.transit(N_simul)
 
 
