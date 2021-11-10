@@ -204,10 +204,10 @@ class Beads:     # OOP
 
             (fx,fy)=self.WCA(relx_right,rely_right,self.r_sub[0,0,i]+self.r_sub)
             f2x[:,:-1]+=np.sum(fx,axis=2)[:,:,np.newaxis]    
-            torque[:,:-1]+=np.sum(-fx*self.l[0,0,i]*np.sin(self.O[:,:-1])+fy*self.l[0,0,i]*np.cos(self.O[:,:-1]),axis=2)[:,:,np.newaxis]  
+            torque[:,:-1]+=np.sum(-fx*self.l*np.sin(self.O[:,:-1])+fy*self.l*np.cos(self.O[:,:-1]),axis=2)[:,:,np.newaxis]  
             (fx,fy)=self.WCA(relx_left,rely_left,self.r_sub[0,0,i]+self.r_sub)
             f2x[:,1:]+=np.sum(fx,axis=2)[:,:,np.newaxis]  
-            torque[:,1:]+=np.sum(-fx*self.l[0,0,i]*np.sin(self.O[:,1:])+fy*self.l[0,0,i]*np.cos(self.O[:,1:]),axis=2)[:,:,np.newaxis]         
+            torque[:,1:]+=np.sum(-fx*self.l*np.sin(self.O[:,1:])+fy*self.l*np.cos(self.O[:,1:]),axis=2)[:,:,np.newaxis]         
         
         # noise
         f1x+=np.random.normal(0,np.sqrt(2*self.D/self.dt),(self.N_ensemble,self.N_ptcl))[:,:,np.newaxis]
@@ -382,7 +382,7 @@ class Beads:     # OOP
             
             right = (np.cos(self.O[:,0])<-np.cos(Othres))*(~(np.cos(self.O[:,-1])>np.cos(Othres)))
             left = (np.cos(self.O[:,-1])>np.cos(Othres))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
-            stuck = (np.cos(self.O[:,0])<-np.cos(Othres))*(np.cos(self.O[:,-1])>np.cos(Othres))
+            stuck = (np.cos(self.O[:,0,0])<-np.cos(Othres))*(np.cos(self.O[:,-1,0])>np.cos(Othres))
         
             time = j*self.dt#*N_time
             
@@ -440,23 +440,23 @@ class Beads:     # OOP
         
 def time(N_ptcl, N_active,g,D):
 
-    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_ensemble = 300,Fs=500,g=g)
+    B1 = Beads(L=68, N_ptcl = 20,N_active = 7,N_sub = 5,AR=1.5,r_b = 1,N_ensemble = 100,Fs=3000,g=0)
 
-    B1.p = 100
-    B1.D = D  #20
-    B1.mu = 0.03
-    B1.mur = 0.03
-    B1.k1 = 20
-    B1.k2 = 8
-    B1.r_cut = [1.5,1.5,1.7]
-    # B1.r_cut = [1.3,0.8,0.9]
-    B1.l = 1.8
+    B1.p = 200
+    B1.D = D
+    B1.mu = 0.1
+    B1.mur = 0.2
     B1.Omin = 0
+    B1.k = 0.1
+    B1.r_0 =1.5
+    # B1.r_cut = [1.3,0.8,0.9]
 
 
-    B1.L = ((B1.N_ptcl-B1.N_active+1)*2*B1.r_cut[0]+(B1.N_active+1)*2*B1.r_cut[1])*0.95
+    B1.L = ((B1.N_ptcl-B1.N_active)*2*B1.r_0+(B1.N_active)*2*B1.r_b+2*(B1.AR-1)*B1.r_b)*0.95
 
-    direc = '211026_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)+',D='+str(B1.D)
+
+
+    direc = '211110_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)+',D='+str(B1.D)
     os.makedirs(direc,exist_ok=True)
 
 
