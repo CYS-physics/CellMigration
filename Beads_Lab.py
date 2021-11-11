@@ -156,8 +156,11 @@ class Beads:     # OOP
 
         (fx,fy)=self.WCA(relx_right,rely_right,lengthR)
         f1x += fx # right particle
+        torque+=-fx[:,1:self.N_active+1]*(-np.average(self.l))*np.sin(self.O)
+        
         (fx,fy)=self.WCA(relx_left,rely_left,lengthL)
         f1x += fx  # left particle
+        torque+=-fx[:,1:self.N_active+1]*(-np.average(self.l))*np.sin(self.O)
         
         
         # 1->2
@@ -174,10 +177,13 @@ class Beads:     # OOP
         
         (fx,fy)=self.WCA(relx_right,rely_right,lengthR)
         f2x+=np.sum(fx,axis=2)[:,:,np.newaxis]  
-        torque+=np.sum(-fx*np.sin(self.O)+fy*np.cos(self.O),axis=2)[:,:,np.newaxis]  
+        torque+=np.sum(-fx*(self.l-np.average(self.l))*np.sin(self.O)+fy*(self.l-np.average(self.l))*np.cos(self.O),axis=2)[:,:,np.newaxis]  
+        torque-=np.sum(fy,axis=2)[:,:,np.newaxis]*(-np.average(self.l))*np.cos(self.O) 
+        
         (fx,fy)=self.WCA(relx_left,rely_left,lengthL)
         f2x+=np.sum(fx,axis=2)[:,:,np.newaxis]  
-        torque+=np.sum(-fx*self.l*np.sin(self.O)+fy*self.l*np.cos(self.O),axis=2)[:,:,np.newaxis]  
+        torque+=np.sum(-fx*(self.l-np.average(self.l))*np.sin(self.O)+fy*(self.l-np.average(self.l))*np.cos(self.O),axis=2)[:,:,np.newaxis] 
+        torque-=np.sum(fy,axis=2)[:,:,np.newaxis]*(-np.average(self.l))*np.cos(self.O) 
         
         
         # 2->1
@@ -193,9 +199,14 @@ class Beads:     # OOP
         lengthL = np.concatenate(((self.r_b+self.r_sub)*np.ones((1,self.N_active-1,1)),(self.r_0+self.r_sub)),axis=1)
         
         (fx,fy)=self.WCA(relx_right,rely_right,lengthR)
-        f1x[:,:self.N_active]+=np.sum(fx,axis=2)[:,:,np.newaxis]  
+        f1x[:,:self.N_active]+=np.sum(fx,axis=2)[:,:,np.newaxis] 
+        torque[:,:-1]+=np.sum(-fx*(-np.average(self.l))*np.sin(self.O),axis=2)[:,1:,np.newaxis]
+        torque[:,-1]+=np.sum(-fx*(-np.average(self.l))*np.sin(self.O),axis=2)[:,0,np.newaxis]
+                             
         (fx,fy)=self.WCA(relx_left,rely_left,lengthL)
-        f1x[:,2:self.N_active+2]+=np.sum(fx,axis=2)[:,:,np.newaxis]  
+        f1x[:,2:self.N_active+2]+=np.sum(fx,axis=2)[:,:,np.newaxis]
+        torque[:,1:]+=np.sum(-fx*(-np.average(self.l))*np.sin(self.O),axis=2)[:,:-1,np.newaxis]
+        torque[:,0]+=np.sum(-fx*(-np.average(self.l))*np.sin(self.O),axis=2)[:,-1,np.newaxis]
         
         
         # 2->2
@@ -207,13 +218,16 @@ class Beads:     # OOP
 
             (fx,fy)=self.WCA(relx_right,rely_right,self.r_sub[0,0,i]+self.r_sub)
             f2x[:,:-1]+=np.sum(fx,axis=2)[:,:,np.newaxis]    
-            torque[:,:-1]+=np.sum(-fx*self.l*np.sin(self.O[:,:-1])+fy*self.l*np.cos(self.O[:,:-1]),axis=2)[:,:,np.newaxis]  
+            torque[:,:-1]+=np.sum(-fx*(self.l-np.average(self.l))*np.sin(self.O[:,:-1])+fy*(self.l-np.average(self.l))*np.cos(self.O[:,:-1]),axis=2)[:,:,np.newaxis]  
+            torque[:,:-1]-=np.sum(fy*(-np.average(self.l))*np.cos(self.O[:,:-1]),axis=2)[:,:,np.newaxis]  
+            
             (fx,fy)=self.WCA(relx_left,rely_left,self.r_sub[0,0,i]+self.r_sub)
             f2x[:,1:]+=np.sum(fx,axis=2)[:,:,np.newaxis]  
-            torque[:,1:]+=np.sum(-fx*self.l*np.sin(self.O[:,1:])+fy*self.l*np.cos(self.O[:,1:]),axis=2)[:,:,np.newaxis]         
-        
+            torque[:,1:]+=np.sum(-fx*(self.l-np.average(self.l))*np.sin(self.O[:,1:])+fy*(self.l-np.average(self.l))*np.cos(self.O[:,1:]),axis=2)[:,:,np.newaxis] 
+            torque[:,1:]-=np.sum(fy*(-np.average(self.l))*np.cos(self.O[:,1:]),axis=2)[:,:,np.newaxis] 
+            
         # noise
-        f1x+=np.random.normal(0,np.sqrt(2*self.D/self.dt),(self.N_ensemble,self.N_ptcl))[:,:,np.newaxis]
+        f1x+=np.random.normal(0,np.sqrt(2*self.D/self.dt)/self.mu,(self.N_ensemble,self.N_ptcl))[:,:,np.newaxis]
 #         f2x+=np.random.normal(0,np.sqrt(2*self.D/self.dt),(self.N_ensemble,self.N_active))
 #         f2y+=np.random.normal(0,np.sqrt(2*self.D/self.dt),(self.N_ensemble,self.N_active))
         
@@ -222,7 +236,7 @@ class Beads:     # OOP
 
         # gravity
 #         f2y-=self.g
-#         torque-=self.g*np.cos(self.O)
+        torque-=self.g*np.cos(self.O)
         
         return(f1x,f2x,torque)
         
@@ -234,6 +248,7 @@ class Beads:     # OOP
         (f1x,f2x,Torque) = self.force()
         Fx = f1x
         Fx[:,1:self.N_active+1]+=f2x-self.p*np.cos(self.O)
+        Torque -=-self.p*np.sin(self.O)*(-np.average(self.l))*np.cos(self.O)
         
 #         self.v = np.mean(Fx,axis=1)*self.mu
         self.v = np.sum(np.cos(self.O),axis=1)  #*self.mu
