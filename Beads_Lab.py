@@ -101,8 +101,11 @@ class Beads:     # OOP
         
         l1 = self.r_0*(self.N_ptcl-self.N_active)
         l2 = self.r_b*(self.N_active)
-        self.X[flag,1:self.N_active+1] = np.ones(np.sum(flag)).reshape(-1,1,1)*np.linspace(0,self.L*(l2/(l1+l2)),self.N_active+1)[1:].reshape(1,-1,1)# active ones
-        self.X[flag,self.N_active+1:] = np.ones(np.sum(flag)).reshape(-1,1,1)*np.linspace(self.L*(l2/(l1+l2)),self.L,self.N_ptcl-self.N_active+1)[1:-1].reshape(1,-1,1)     # passive ones
+        seg1 = np.ones(np.sum(flag)).reshape(-1,1,1)*np.linspace(0,self.L*(l2/(l1+l2)),self.N_active+1).reshape(1,-1,1)
+        seg2 = np.ones(np.sum(flag)).reshape(-1,1,1)*np.linspace(self.L*(l2/(l1+l2)),self.L,self.N_ptcl-self.N_active+1).reshape(1,-1,1)
+        self.X[flag,0] = (1/2)*(seg2[:,-1]+seg2[:,-2])
+        self.X[flag,1:self.N_active+1] = (1/2)*(seg1[:,1:]+seg1[:,:-1])# active ones
+        self.X[flag,self.N_active+1:] = (1/2)*(seg2[:,1:-1]+seg2[:,:-2])     # passive ones
         
         self.O[flag] = np.ones((np.sum(flag),self.N_active,1))*np.pi/2
         
