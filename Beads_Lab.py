@@ -482,7 +482,7 @@ def time(N_ptcl, N_active,g,D):
 
 
 
-    direc = '211113_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)+',D='+str(B1.D)
+    direc = '211114_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)+',D='+str(B1.D)
     os.makedirs(direc,exist_ok=True)
 
 
