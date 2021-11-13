@@ -77,8 +77,8 @@ class Beads:     # OOP
         
         
         theta = np.linspace(0,np.pi,self.N_sub,endpoint=False) 
-        self.l = self.r_b*(AR-1/AR)*(AR+np.cos(theta)).reshape(1,1,-1)     # center position of sub bead
-        self.r_sub = self.AR*self.r_b*np.sqrt(1+(1/AR**2-1)*np.cos(theta)**2).reshape(1,1,-1)  # radius of active sub beads r1,r2, ...
+        self.l = AR*self.r_b*((AR-1/AR)*(np.cos(theta)+1)).reshape(1,1,-1)     # center position of sub bead
+        self.r_sub = AR*self.r_b*np.sqrt(1+(1/AR**2-1)*np.cos(theta)**2).reshape(1,1,-1)  # radius of active sub beads r1,r2, ...
     
     
     
@@ -100,7 +100,7 @@ class Beads:     # OOP
         self.X[flag]= np.zeros((np.sum(flag),self.N_ptcl,1))
         
         l1 = self.r_0*(self.N_ptcl-self.N_active)
-        l2 = self.r_b*(self.N_active)
+        l2 = self.r_b*(self.N_active)+2*(self.AR-1)*self.r_b
         seg1 = np.ones(np.sum(flag)).reshape(-1,1,1)*np.linspace(0,self.L*(l2/(l1+l2)),self.N_active+1).reshape(1,-1,1)
         seg2 = np.ones(np.sum(flag)).reshape(-1,1,1)*np.linspace(self.L*(l2/(l1+l2)),self.L,self.N_ptcl-self.N_active+1).reshape(1,-1,1)
         self.X[flag,0] = (1/2)*(seg2[:,-1]+seg2[:,-2])
@@ -112,8 +112,8 @@ class Beads:     # OOP
         self.set_structure()
         
     def set_structure(self):
-        self.Xs = self.X[:,1:self.N_active+1].reshape((self.N_ensemble,self.N_active,1))+self.l*np.cos(self.O.reshape((self.N_ensemble,self.N_active,1)))   # 1~N_active
-        self.Ys = self.l*np.sin(self.O.reshape((self.N_ensemble,self.N_active,1)))
+        self.Xs = self.X[:,1:self.N_active+1]+self.l*np.cos(self.O)   # 1~N_active
+        self.Ys = self.l*np.sin(self.O)
         self.Xs = self.periodic(self.Xs)
     
 #     def WCAx(self,rx,ry,r_cut): # return the gradient of WCA potential -> odd
@@ -132,23 +132,24 @@ class Beads:     # OOP
     
     def force(self):    # force from WCA potential (truncated LJ potential -> hard wall repulsion)
         f1x = np.zeros((self.N_ensemble,self.N_ptcl,1))
-        f2x = np.zeros((self.N_ensemble,self.N_active,1))
+        f2x = np.zeros((self.N_ensemble,self.N_active,self.N_sub))
 #         f1y = np.zeros(self.N_active)
-#         f2y = np.zeros((self.N_ensemble,self.N_active))
-        torque = np.zeros((self.N_ensemble,self.N_active,1))
+        f2y = np.zeros((self.N_ensemble,self.N_active,self.N_sub))
+#         torque = np.zeros((self.N_ensemble,self.N_active,1))
 
 
         
         # particle 1 constrained to wall, particle 2 rotating
         
         # relative position from -> to : r(from)-r(to)
+        # force on (to) object
         
         # 1->1
         relx_right = self.periodic(np.roll(self.X,-1,axis=1)-self.X)
         relx_left = self.periodic(np.roll(self.X,1,axis=1)-self.X)
         rely_right = np.zeros((self.N_ensemble,self.N_ptcl,1))
         rely_left = np.zeros((self.N_ensemble,self.N_ptcl,1))
-        rely_right[:,0] = -self.r_0+self.r_b
+        rely_right[:,0] = self.r_0-self.r_b
         rely_left[:,self.N_active+2] = self.r_0-self.r_b
         
         lengthR = np.concatenate(([self.r_0+self.r_b],(self.r_b*2)*np.ones(self.N_active-1),[self.r_0+self.r_b],(self.r_0*2)*np.ones(self.N_ptcl-self.N_active-1))).reshape(1,-1,1)
@@ -156,57 +157,50 @@ class Beads:     # OOP
 
         (fx,fy)=self.WCA(relx_right,rely_right,lengthR)
         f1x += fx # right particle
-        torque+=-fx[:,1:self.N_active+1]*(-np.average(self.l))*np.sin(self.O)
         
         (fx,fy)=self.WCA(relx_left,rely_left,lengthL)
         f1x += fx  # left particle
-        torque+=-fx[:,1:self.N_active+1]*(-np.average(self.l))*np.sin(self.O)
         
         
         # 1->2
-#         print(self.Xs.shape)
         relx_right = self.periodic(self.X[:,2:self.N_active+2]-self.Xs)
         relx_left = self.periodic(self.X[:,:self.N_active]-self.Xs)
         rely_right = -self.Ys
         rely_left = -self.Ys
         rely_right[:,-1] += self.r_0-self.r_b
-        rely_left[:,0] -= self.r_0-self.r_b
+        rely_left[:,0] += self.r_0-self.r_b
         
-        lengthR = np.concatenate(((self.r_b+self.r_sub)*np.ones((1,self.N_active-1,1)),(self.r_0+self.r_sub)),axis=1)
-        lengthL = np.concatenate(((self.r_0+self.r_sub),(self.r_b+self.r_sub)*np.ones((1,self.N_active-1,1))),axis=1)
+        lengthR = np.concatenate(((self.r_0+self.r_sub)*np.ones((1,self.N_active-1,1)),(self.r_0+self.r_sub)),axis=1)
+        lengthL = np.concatenate(((self.r_0+self.r_sub),(self.r_0+self.r_sub)*np.ones((1,self.N_active-1,1))),axis=1)
         
         (fx,fy)=self.WCA(relx_right,rely_right,lengthR)
-        f2x+=np.sum(fx,axis=2)[:,:,np.newaxis]  
-        torque+=np.sum(-fx*(self.l-np.average(self.l))*np.sin(self.O)+fy*(self.l-np.average(self.l))*np.cos(self.O),axis=2)[:,:,np.newaxis]  
-        torque-=np.sum(fy,axis=2)[:,:,np.newaxis]*(-np.average(self.l))*np.cos(self.O) 
+        f2x+=fx
+        f2y+=fy
         
         (fx,fy)=self.WCA(relx_left,rely_left,lengthL)
-        f2x+=np.sum(fx,axis=2)[:,:,np.newaxis]  
-        torque+=np.sum(-fx*(self.l-np.average(self.l))*np.sin(self.O)+fy*(self.l-np.average(self.l))*np.cos(self.O),axis=2)[:,:,np.newaxis] 
-        torque-=np.sum(fy,axis=2)[:,:,np.newaxis]*(-np.average(self.l))*np.cos(self.O) 
+        f2x+=fx
+        f2y+=fy
         
         
         # 2->1
+        # force on (from) object
         
         relx_right = self.periodic(self.Xs-self.X[:,:self.N_active])
         relx_left = self.periodic(self.Xs-self.X[:,2:self.N_active+2])
         rely_right = self.Ys
         rely_left = self.Ys
-        rely_right[:,0] -= self.r_0-self.r_b
-        rely_left[:,-1] += self.r_0-self.r_b
+        rely_right[:,0] += -self.r_0+self.r_b
+        rely_left[:,-1] += -self.r_0+self.r_b
         
-        lengthR = np.concatenate(((self.r_0+self.r_sub),(self.r_b+self.r_sub)*np.ones((1,self.N_active-1,1))),axis=1)
-        lengthL = np.concatenate(((self.r_b+self.r_sub)*np.ones((1,self.N_active-1,1)),(self.r_0+self.r_sub)),axis=1)
+        lengthR = np.concatenate(((self.r_0+self.r_sub),(self.r_0+self.r_sub)*np.ones((1,self.N_active-1,1))),axis=1)
+        lengthL = np.concatenate(((self.r_0+self.r_sub)*np.ones((1,self.N_active-1,1)),(self.r_0+self.r_sub)),axis=1)
         
         (fx,fy)=self.WCA(relx_right,rely_right,lengthR)
-        f1x[:,:self.N_active]+=np.sum(fx,axis=2)[:,:,np.newaxis] 
-        torque[:,:-1]+=np.sum(-fx*(-np.average(self.l))*np.sin(self.O),axis=2)[:,1:,np.newaxis]
-        torque[:,-1]+=np.sum(-fx*(-np.average(self.l))*np.sin(self.O),axis=2)[:,0,np.newaxis]
+        f1x[:,:self.N_active]+=np.sum(fx,axis=2)[:,:,np.newaxis]
+
                              
         (fx,fy)=self.WCA(relx_left,rely_left,lengthL)
         f1x[:,2:self.N_active+2]+=np.sum(fx,axis=2)[:,:,np.newaxis]
-        torque[:,1:]+=np.sum(-fx*(-np.average(self.l))*np.sin(self.O),axis=2)[:,:-1,np.newaxis]
-        torque[:,0]+=np.sum(-fx*(-np.average(self.l))*np.sin(self.O),axis=2)[:,-1,np.newaxis]
         
         
         # 2->2
@@ -217,37 +211,40 @@ class Beads:     # OOP
             rely_left = self.Ys[:,:-1,i][:,:,np.newaxis]  -self.Ys[:,1:]
 
             (fx,fy)=self.WCA(relx_right,rely_right,self.r_sub[0,0,i]+self.r_sub)
-            f2x[:,:-1]+=np.sum(fx,axis=2)[:,:,np.newaxis]    
-            torque[:,:-1]+=np.sum(-fx*(self.l-np.average(self.l))*np.sin(self.O[:,:-1])+fy*(self.l-np.average(self.l))*np.cos(self.O[:,:-1]),axis=2)[:,:,np.newaxis]  
-            torque[:,:-1]-=np.sum(fy*(-np.average(self.l))*np.cos(self.O[:,:-1]),axis=2)[:,:,np.newaxis]  
+            f2x[:,:-1]+=fx
+            f2y[:,:-1]+=fy
             
             (fx,fy)=self.WCA(relx_left,rely_left,self.r_sub[0,0,i]+self.r_sub)
-            f2x[:,1:]+=np.sum(fx,axis=2)[:,:,np.newaxis]  
-            torque[:,1:]+=np.sum(-fx*(self.l-np.average(self.l))*np.sin(self.O[:,1:])+fy*(self.l-np.average(self.l))*np.cos(self.O[:,1:]),axis=2)[:,:,np.newaxis] 
-            torque[:,1:]-=np.sum(fy*(-np.average(self.l))*np.cos(self.O[:,1:]),axis=2)[:,:,np.newaxis] 
+            f2x[:,1:]+=fx
+            f2y[:,1:]+=fy
             
         # noise
-        f1x+=np.random.normal(0,np.sqrt(2*self.D/self.dt)/self.mu,(self.N_ensemble,self.N_ptcl))[:,:,np.newaxis]
-#         f2x+=np.random.normal(0,np.sqrt(2*self.D/self.dt),(self.N_ensemble,self.N_active))
-#         f2y+=np.random.normal(0,np.sqrt(2*self.D/self.dt),(self.N_ensemble,self.N_active))
+        noise=np.random.normal(0,np.sqrt(2*self.D/self.dt)/self.mu,(self.N_ensemble,self.N_ptcl,1))
+        f1x+=noise
         
         # normal force
 #         fN = self.p*np.sin(self.O)-f1y
 
         # gravity
-#         f2y-=self.g
-        torque-=self.g*np.cos(self.O)
+        f2y-=self.g
+
+        com = np.average(self.l)*(self.N_sub/(self.N_sub+1))*4/5
+        f1y = -np.sum(f2y,axis=2)[:,:,np.newaxis]
+        torque = -f1x[:,1:self.N_active+1]*(-com)*np.sin(self.O)+f1y*(-com)*np.cos(self.O)
+        torque+=np.sum(-f2x*(self.l-com)*np.sin(self.O)+f2y*(self.l-com)*np.cos(self.O),axis=2)[:,:,np.newaxis]
+
+        FX = f1x
+        FX[:,1:self.N_active+1]+=np.sum(f2x,axis=2)[:,:,np.newaxis]
         
-        return(f1x,f2x,torque)
+        return(FX,torque)
         
 
     
     def time_evolve(self):
         
         # compute force & torque
-        (f1x,f2x,Torque) = self.force()
-        Fx = f1x
-        Fx[:,1:self.N_active+1]+=f2x-self.p*np.cos(self.O)
+        (FX,Torque) = self.force()
+        FX[:,1:self.N_active+1]+=-self.p*np.cos(self.O)
         Torque -=-self.p*np.sin(self.O)*(-np.average(self.l))*np.cos(self.O)
         
 #         self.v = np.mean(Fx,axis=1)*self.mu
@@ -256,7 +253,7 @@ class Beads:     # OOP
         
 #         Torque = self.l/2*(f2y*np.cos(self.O)+(f1x[:, 1:self.N_active+1]-f2x-self.p*np.cos(self.O))*np.sin(self.O))
         # update configuration
-        self.X+=self.mu*Fx*self.dt
+        self.X+=self.mu*FX*self.dt
         self.O+=self.mur*Torque*self.dt
 
         self.X = self.periodic(self.X)
@@ -458,15 +455,17 @@ class Beads:     # OOP
         
 def time(N_ptcl, N_active,g,D):
 
-    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_sub = 5,AR=1.5,r_b = 1,N_ensemble = 100,Fs=3000,g=g)
+    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_sub = 5,AR=1.5,r_b = 10,N_ensemble = 100,Fs=200,g=g)
 
-    B1.p = 200
-    B1.D = D
-    B1.mu = 0.1
-    B1.mur = 0.2
+    
+
+    B1.p = 50
+    B1.D = 0.1
+    B1.mu = 1
+    B1.mur =0.001
     B1.Omin = 0
-    B1.k = 0.1
-    B1.r_0 =1.5
+    B1.k = 2
+    B1.r_0 =15
     # B1.r_cut = [1.3,0.8,0.9]
 
 
@@ -474,7 +473,10 @@ def time(N_ptcl, N_active,g,D):
 
 
 
-    direc = '211110_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)+',D='+str(B1.D)
+
+
+
+    direc = '211113_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)+',D='+str(B1.D)
     os.makedirs(direc,exist_ok=True)
 
 
