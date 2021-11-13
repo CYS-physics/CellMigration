@@ -97,17 +97,18 @@ class Beads:     # OOP
     def set_zero(self,flag):              # initializing simulation configurations
         
 #         self.X = np.ones(self.N_ensemble).reshape(-1,1)*np.linspace(0,self.L,self.N_ptcl+1)[:self.N_ptcl].reshape(1,-1)
-        self.X[flag]= np.zeros((np.sum(flag),self.N_ptcl,1))
-        
-        l1 = self.r_0*(self.N_ptcl-self.N_active)
-        l2 = self.r_b*(self.N_active)+2*(self.AR-1)*self.r_b
-        seg1 = np.ones(np.sum(flag)).reshape(-1,1,1)*np.linspace(0,self.L*(l2/(l1+l2)),self.N_active+1).reshape(1,-1,1)
-        seg2 = np.ones(np.sum(flag)).reshape(-1,1,1)*np.linspace(self.L*(l2/(l1+l2)),self.L,self.N_ptcl-self.N_active+1).reshape(1,-1,1)
+#         self.X[flag]= np.zeros((np.sum(flag),self.N_ptcl,1))
+        l0 = self.r_b*(self.AR+1)
+        l1 = 2*self.r_0*(self.N_ptcl-self.N_active)
+        l2 = 2*self.r_b*(1+self.AR)/2*(self.N_active)
+        seg1 = np.ones(np.sum(flag)).reshape(-1,1,1)*np.linspace(self.L*(l0/(l0+l1+l2)),self.L*(l0+l2)/(l0+l1+l2),self.N_active+1).reshape(1,-1,1)
+        seg2 = np.ones(np.sum(flag)).reshape(-1,1,1)*np.linspace(self.L*(l0+l2)/(l0+l1+l2),self.L,self.N_ptcl-self.N_active+1).reshape(1,-1,1)
         self.X[flag,0] = (1/2)*(seg2[:,-1]+seg2[:,-2])
         self.X[flag,1:self.N_active+1] = (1/2)*(seg1[:,1:]+seg1[:,:-1])# active ones
         self.X[flag,self.N_active+1:] = (1/2)*(seg2[:,1:-1]+seg2[:,:-2])     # passive ones
         
         self.O[flag] = np.ones((np.sum(flag),self.N_active,1))*np.pi/2
+        self.O[flag,0] = np.pi
         
         self.set_structure()
         
@@ -228,7 +229,7 @@ class Beads:     # OOP
         # gravity
         f2y-=self.g
 
-        com = np.average(self.l)*(self.N_sub/(self.N_sub+1))*4/5
+        com = np.average(self.l)*(self.N_sub/(self.N_sub+1))*3/5
         f1y = -np.sum(f2y,axis=2)[:,:,np.newaxis]
         torque = -f1x[:,1:self.N_active+1]*(-com)*np.sin(self.O)+f1y*(-com)*np.cos(self.O)
         torque+=np.sum(-f2x*(self.l-com)*np.sin(self.O)+f2y*(self.l-com)*np.cos(self.O),axis=2)[:,:,np.newaxis]
@@ -372,7 +373,7 @@ class Beads:     # OOP
 
     def transit(self,N_iter):
         self.set_zero((np.ones(self.N_ensemble)==np.ones(self.N_ensemble)))
-        
+        time = 0
         move_in = [np.zeros(0)]*self.N_ensemble
         move_out = [np.zeros(0)]*self.N_ensemble
         count = 0
@@ -386,6 +387,12 @@ class Beads:     # OOP
         prev_left = (np.cos(self.O[:,-1])>np.cos(Othres))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
         prev_stuck = (np.cos(self.O[:,0])<-np.cos(Othres))*(np.cos(self.O[:,-1])>np.cos(Othres))
         time = 0
+        for i in range(self.N_ensemble):
+            if prev_right[i]:
+                move_in[i] = np.append(move_in[i],time)
+            elif prev_left[i]:
+                move_in[i] = np.append(move_in[i],time)
+        
 
         v1_t = np.zeros(N_iter)
         v2_t = np.zeros(N_iter)
@@ -455,16 +462,15 @@ class Beads:     # OOP
         
 def time(N_ptcl, N_active,g,D):
 
-    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_sub = 5,AR=1.5,r_b = 10,N_ensemble = 100,Fs=200,g=g)
+    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_sub = 5,AR=1.5,r_b = 12,N_ensemble = 100,Fs=200,g=g)
 
-    
 
     B1.p = 50
-    B1.D = 0.1
+    B1.D = 5
     B1.mu = 1
     B1.mur =0.001
     B1.Omin = 0
-    B1.k = 2
+    B1.k = 3
     B1.r_0 =15
     # B1.r_cut = [1.3,0.8,0.9]
 
