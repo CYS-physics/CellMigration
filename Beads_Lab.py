@@ -390,8 +390,10 @@ class Beads:     # OOP
         for i in range(self.N_ensemble):
             if prev_right[i]:
                 move_in[i] = np.append(move_in[i],time)
+                count+=1
             elif prev_left[i]:
                 move_in[i] = np.append(move_in[i],time)
+                count+=1
         
 
         v1_t = np.zeros(N_iter)
