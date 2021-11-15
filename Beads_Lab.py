@@ -54,6 +54,8 @@ class Beads:     # OOP
         self.mu = 0.002
         self.mur = 0.002
         
+        self.boundary='periodic'
+        
         
         
         
@@ -115,7 +117,8 @@ class Beads:     # OOP
     def set_structure(self):
         self.Xs = self.X[:,1:self.N_active+1]+self.l*np.cos(self.O)   # 1~N_active
         self.Ys = self.l*np.sin(self.O)
-        self.Xs = self.periodic(self.Xs)
+        if self.boundary=='periodic':
+            self.Xs = self.periodic(self.Xs)
     
 #     def WCAx(self,rx,ry,r_cut): # return the gradient of WCA potential -> odd
 #         r = np.sqrt(rx**2 + ry**2)
@@ -146,8 +149,12 @@ class Beads:     # OOP
         # force on (to) object
         
         # 1->1
-        relx_right = self.periodic(np.roll(self.X,-1,axis=1)-self.X)
-        relx_left = self.periodic(np.roll(self.X,1,axis=1)-self.X)
+        relx_right = np.roll(self.X,-1,axis=1)-self.X
+        if self.boundary=='periodic':
+            relx_right=self.periodic(relx_right)
+        relx_left = np.roll(self.X,1,axis=1)-self.X
+        if self.boundary=='periodic':
+            relx_left=self.periodic(relx_left)
         rely_right = np.zeros((self.N_ensemble,self.N_ptcl,1))
         rely_left = np.zeros((self.N_ensemble,self.N_ptcl,1))
         rely_right[:,0] = self.r_0-self.r_b
@@ -164,8 +171,13 @@ class Beads:     # OOP
         
         
         # 1->2
-        relx_right = self.periodic(self.X[:,2:self.N_active+2]-self.Xs)
-        relx_left = self.periodic(self.X[:,:self.N_active]-self.Xs)
+        
+        relx_right = self.X[:,2:self.N_active+2]-self.Xs
+        if self.boundary=='periodic':
+            relx_right=self.periodic(relx_right)
+        relx_left = self.X[:,:self.N_active]-self.Xs
+        if self.boundary=='periodic':
+            relx_left=self.periodic(relx_left)
         rely_right = -self.Ys
         rely_left = -self.Ys
         rely_right[:,-1] += self.r_0-self.r_b
@@ -186,8 +198,13 @@ class Beads:     # OOP
         # 2->1
         # force on (from) object
         
-        relx_right = self.periodic(self.Xs-self.X[:,:self.N_active])
-        relx_left = self.periodic(self.Xs-self.X[:,2:self.N_active+2])
+        relx_right = self.Xs-self.X[:,:self.N_active]
+        if self.boundary=='periodic':
+            relx_right=self.periodic(relx_right)
+        relx_left = self.Xs-self.X[:,2:self.N_active+2]
+        if self.boundary=='periodic':
+            relx_left=self.periodic(relx_left)
+        
         rely_right = self.Ys
         rely_left = self.Ys
         rely_right[:,0] += -self.r_0+self.r_b
@@ -206,8 +223,13 @@ class Beads:     # OOP
         
         # 2->2
         for i in range(self.N_sub):
-            relx_right = self.periodic(self.Xs[:,1:,i][:,:,np.newaxis] -self.Xs[:,:-1])
-            relx_left = self.periodic(self.Xs[:,:-1,i][:,:,np.newaxis]  -self.Xs[:,1:])
+         
+            relx_right = self.Xs[:,1:,i][:,:,np.newaxis] -self.Xs[:,:-1]
+            if self.boundary=='periodic':
+                relx_right=self.periodic(relx_right)
+            relx_left = self.Xs[:,:-1,i][:,:,np.newaxis]  -self.Xs[:,1:]
+            if self.boundary=='periodic':
+                relx_left=self.periodic(relx_left)
             rely_right = self.Ys[:,1:,i][:,:,np.newaxis]  -self.Ys[:,:-1]
             rely_left = self.Ys[:,:-1,i][:,:,np.newaxis]  -self.Ys[:,1:]
 
@@ -254,10 +276,16 @@ class Beads:     # OOP
         
 #         Torque = self.l/2*(f2y*np.cos(self.O)+(f1x[:, 1:self.N_active+1]-f2x-self.p*np.cos(self.O))*np.sin(self.O))
         # update configuration
+        if self.boundary!='periodic':
+            FX-=self.V/self.mu
         self.X+=self.mu*FX*self.dt
         self.O+=self.mur*Torque*self.dt
+        
 
-        self.X = self.periodic(self.X)
+        if self.boundary=='periodic':
+            self.X = self.periodic(self.X)
+        else:
+            self.X[:,self.N_active] = self.XR
         
         self.O = np.amax(np.vstack([[self.O],[np.ones((self.N_ensemble,self.N_active,1))*self.Omin]]),axis=0)
         self.O = np.amin(np.vstack([[self.O],[(np.ones((self.N_ensemble,self.N_active,1))*(np.pi-self.Omin))]]),axis=0)  
@@ -269,8 +297,10 @@ class Beads:     # OOP
     def animate(self,N_iter,directory):
         self.set_zero((np.ones(self.N_ensemble)==np.ones(self.N_ensemble)))
         
-        axrange = [-self.L/2, self.L/2, -self.L/100, self.L/10]
-        
+        if self.boundary=='periodic':
+            axrange = [-self.L/2, self.L/2, -self.L/100, self.L/10]
+        else:
+            axrange = [0,self.L,-self.L/100, self.L/10]
         #Setup plot for updated positions
         fig1 = plt.figure(figsize=(6,8))
         ax1 = fig1.add_subplot(311)
@@ -473,7 +503,7 @@ def time(N_ptcl, N_active,g,D):
     B1.mur =0.001
     B1.Omin = 0
     B1.k = 3
-    B1.r_0 =15
+    B1.r_0 =20
     # B1.r_cut = [1.3,0.8,0.9]
 
 
@@ -484,7 +514,7 @@ def time(N_ptcl, N_active,g,D):
 
 
 
-    direc = '211114_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)+',D='+str(B1.D)
+    direc = '211115_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)+',D='+str(B1.D)
     os.makedirs(direc,exist_ok=True)
 
 
@@ -522,5 +552,8 @@ def time(N_ptcl, N_active,g,D):
     save_dict['v_t_var'] = v_t_var
     
     np.savez(direc+'/N'+str(B1.N_active)+'.npz', **save_dict)
+    
+# def angle(N_active,v):
+    
 
 
