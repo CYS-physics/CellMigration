@@ -70,6 +70,7 @@ class Beads:     # OOP
         self.r_0 =  1 # radius of passive bead
         self.r_b = r_b
         self.AR = AR
+        self.cr = 1
         
         
         # inner structure coefficients
@@ -183,8 +184,8 @@ class Beads:     # OOP
         rely_right[:,-1] += self.r_0-self.r_b
         rely_left[:,0] += self.r_0-self.r_b
         
-        lengthR = np.concatenate(((self.r_0+self.r_sub)*np.ones((1,self.N_active-1,1)),(self.r_0+self.r_sub)),axis=1)
-        lengthL = np.concatenate(((self.r_0+self.r_sub),(self.r_0+self.r_sub)*np.ones((1,self.N_active-1,1))),axis=1)
+        lengthR = np.concatenate(((self.r_b+self.r_sub)*np.ones((1,self.N_active-1,1)),(self.r_0+self.r_sub)),axis=1)
+        lengthL = np.concatenate(((self.r_0+self.r_sub),(self.r_b+self.r_sub)*np.ones((1,self.N_active-1,1))),axis=1)
         
         (fx,fy)=self.WCA(relx_right,rely_right,lengthR)
         f2x+=fx
@@ -210,8 +211,8 @@ class Beads:     # OOP
         rely_right[:,0] += -self.r_0+self.r_b
         rely_left[:,-1] += -self.r_0+self.r_b
         
-        lengthR = np.concatenate(((self.r_0+self.r_sub),(self.r_0+self.r_sub)*np.ones((1,self.N_active-1,1))),axis=1)
-        lengthL = np.concatenate(((self.r_0+self.r_sub)*np.ones((1,self.N_active-1,1)),(self.r_0+self.r_sub)),axis=1)
+        lengthR = np.concatenate(((self.r_0+self.r_sub),(self.r_b+self.r_sub)*np.ones((1,self.N_active-1,1))),axis=1)
+        lengthL = np.concatenate(((self.r_b+self.r_sub)*np.ones((1,self.N_active-1,1)),(self.r_0+self.r_sub)),axis=1)
         
         (fx,fy)=self.WCA(relx_right,rely_right,lengthR)
         f1x[:,:self.N_active]+=np.sum(fx,axis=2)[:,:,np.newaxis]
@@ -250,8 +251,14 @@ class Beads:     # OOP
 
         # gravity
         f2y-=self.g
+        
+        # propulsion
+        f2x+=-self.p*np.cos(self.O)/self.mu
+#         f1x[:,1:self.N_active+1]+=-self.p*np.cos(self.O)/self.mu
+        f2y+=-self.p*np.sin(self.O)/self.mu
+#         Torque -=-self.p*np.sin(self.O)*(-np.average(self.l))*np.cos(self.O)
 
-        com = np.average(self.l)*(self.N_sub/(self.N_sub+1))*3/5
+        com = np.average(self.l)*(self.N_sub/(self.N_sub+1))*self.cr
         f1y = -np.sum(f2y,axis=2)[:,:,np.newaxis]
         torque = -f1x[:,1:self.N_active+1]*(-com)*np.sin(self.O)+f1y*(-com)*np.cos(self.O)
         torque+=np.sum(-f2x*(self.l-com)*np.sin(self.O)+f2y*(self.l-com)*np.cos(self.O),axis=2)[:,:,np.newaxis]
@@ -267,11 +274,10 @@ class Beads:     # OOP
         
         # compute force & torque
         (FX,Torque) = self.force()
-        FX[:,1:self.N_active+1]+=-self.p*np.cos(self.O)
-        Torque -=-self.p*np.sin(self.O)*(-np.average(self.l))*np.cos(self.O)
+        
         
 #         self.v = np.mean(Fx,axis=1)*self.mu
-        self.v = np.sum(np.cos(self.O),axis=1)  #*self.mu
+        
 
         
 #         Torque = self.l/2*(f2y*np.cos(self.O)+(f1x[:, 1:self.N_active+1]-f2x-self.p*np.cos(self.O))*np.sin(self.O))
@@ -283,6 +289,7 @@ class Beads:     # OOP
         
 
         if self.boundary=='periodic':
+            self.v = np.sum(np.cos(self.O),axis=1)  #*self.mu
             self.X = self.periodic(self.X)
         else:
             self.X[:,self.N_active] = self.XR
@@ -494,33 +501,37 @@ class Beads:     # OOP
         
 def time(N_ptcl, N_active,g,D):
 
-    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_sub = 5,AR=1.5,r_b = 12,N_ensemble = 100,Fs=200,g=g)
+    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_sub = 7,AR=1.8,r_b = 10,N_ensemble = 100,Fs=1000,g=g)
+
+    B1.boundary='periodic'
 
 
-    B1.p = 50
-    B1.D = 5
-    B1.mu = 1
-    B1.mur =0.001
+    B1.p = 30
+    B1.D = 1
+    B1.mu = 10
+    B1.mur =0.01
     B1.Omin = 0
-    B1.k = 3
-    B1.r_0 =20
-    # B1.r_cut = [1.3,0.8,0.9]
+    B1.k = 10
+    B1.r_0 =40
+    B1.cr = 1
 
 
-    B1.L = ((B1.N_ptcl-B1.N_active)*2*B1.r_0+(B1.N_active)*2*B1.r_b+2*(B1.AR-1)*B1.r_b)*0.95
+    B1.L = ((B1.N_ptcl-B1.N_active)*2*B1.r_0+(B1.N_active)*2.3*B1.r_b+2*(B1.AR-1)*B1.r_b)*1.2
+    l0 = B1.r_b*(B1.AR+1)
+    l1 = 2*B1.r_0*(B1.N_ptcl-B1.N_active)
+    l2 = 2*B1.r_b*(1+B1.AR)/2*(B1.N_active)
+    seg1 = np.linspace(B1.L*(l0/(l0+l1+l2)),B1.L*(l0+l2)/(l0+l1+l2),B1.N_active+1)
+    B1.XR = (1/2)*(seg1[-1]+seg1[-2])
 
 
 
-
-
-
-    direc = '211115_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)+',D='+str(B1.D)
+    direc = '211116_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)+',D='+str(B1.D)
     os.makedirs(direc,exist_ok=True)
 
 
 
 #     (right_in,left_in,stuck_in, right_out, left_out,stuck_out) = B1.transit(200000)
-    N_simul = 3000000
+    N_simul = 1000000
     (move_in,move_out,v_t_avg,v_t_var) = B1.transit(N_simul)
 
 
