@@ -502,12 +502,13 @@ class Beads:     # OOP
 def time(N_ptcl, N_active,g,D):
 
     B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_sub = 7,AR=1.8,r_b = 10,N_ensemble = 100,Fs=1000,g=g)
-
+    B1.D = D
+    
     B1.boundary='periodic'
 
 
     B1.p = 30
-    B1.D = 1
+    
     B1.mu = 10
     B1.mur =0.01
     B1.Omin = 0
