@@ -103,14 +103,14 @@ class Beads:     # OOP
 #         self.X[flag]= np.zeros((np.sum(flag),self.N_ptcl,1))
         l0 = self.r_b*(self.AR+1)
         l1 = 2*self.r_0*(self.N_ptcl-self.N_active)
-        l2 = 2*self.r_b*(1+self.AR)/2*(self.N_active)
+        l2 = 2*self.r_b*(1+self.AR*1.3)/2*(self.N_active)
         seg1 = np.ones(np.sum(flag)).reshape(-1,1,1)*np.linspace(self.L*(l0/(l0+l1+l2)),self.L*(l0+l2)/(l0+l1+l2),self.N_active+1).reshape(1,-1,1)
         seg2 = np.ones(np.sum(flag)).reshape(-1,1,1)*np.linspace(self.L*(l0+l2)/(l0+l1+l2),self.L,self.N_ptcl-self.N_active+1).reshape(1,-1,1)
         self.X[flag,0] = (1/2)*(seg2[:,-1]+seg2[:,-2])
         self.X[flag,1:self.N_active+1] = (1/2)*(seg1[:,1:]+seg1[:,:-1])# active ones
         self.X[flag,self.N_active+1:] = (1/2)*(seg2[:,1:-1]+seg2[:,:-2])     # passive ones
         
-        self.O[flag] = np.ones((np.sum(flag),self.N_active,1))*np.pi/2
+        self.O[flag] = np.ones((np.sum(flag),self.N_active,1))*np.pi*(1/2+1/10)
         self.O[flag,0] = np.pi
         
         self.set_structure()
@@ -501,23 +501,22 @@ class Beads:     # OOP
         
 def time(N_ptcl, N_active,g,D):
 
-    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_sub = 7,AR=1.8,r_b = 10,N_ensemble = 100,Fs=1000,g=g)
+    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_sub = 7,AR=1.5,r_b = 10,N_ensemble = 100,Fs=100000,g=g)
     B1.D = D
     
     B1.boundary='periodic'
 
 
-    B1.p = 30
-    
-    B1.mu = 10
-    B1.mur =0.01
+    B1.p =2000
+    B1.mu = 1000
+    B1.mur =0.5
     B1.Omin = 0
-    B1.k = 10
-    B1.r_0 =40
+    B1.k = 0.7
+    B1.r_0 =23
     B1.cr = 1
 
 
-    B1.L = ((B1.N_ptcl-B1.N_active)*2*B1.r_0+(B1.N_active)*2.3*B1.r_b+2*(B1.AR-1)*B1.r_b)*1.2
+    B1.L = ((B1.N_ptcl-B1.N_active)*2*B1.r_0+(B1.N_active)*2.3*B1.r_b+2*(B1.AR-1)*B1.r_b)*1.1
     l0 = B1.r_b*(B1.AR+1)
     l1 = 2*B1.r_0*(B1.N_ptcl-B1.N_active)
     l2 = 2*B1.r_b*(1+B1.AR)/2*(B1.N_active)
@@ -526,7 +525,7 @@ def time(N_ptcl, N_active,g,D):
 
 
 
-    direc = '211116_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)+',D='+str(B1.D)
+    direc = '211117_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)+',D='+str(B1.D)
     os.makedirs(direc,exist_ok=True)
 
 
