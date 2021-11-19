@@ -661,8 +661,6 @@ def angle(N_passive, N_active,g,D,v):
     save_dict['N_active'] = B1.N_active
     save_dict['dt'] = B1.dt
     save_dict['N_iter'] = N_iter
-    save_dict['v_t_avg'] = v_t_avg
-    save_dict['v_t_var'] = v_t_var
     
     np.savez(direc+'/v'+str(B1.V)+'.npz', **save_dict)
 
