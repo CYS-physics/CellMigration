@@ -564,7 +564,110 @@ def time(N_ptcl, N_active,g,D):
     
     np.savez(direc+'/N'+str(B1.N_active)+'.npz', **save_dict)
     
-# def angle(N_active,v):
+
+def angle(N_passive, N_active,g,D,v):
+
+    B1 = Beads(L=68, N_ptcl = N_passive+N_active,N_active = N_active,N_sub = 7,AR=1.5,r_b = 10,N_ensemble = 100,Fs=100000,g=g)
+    B1.D = D
+    B1.V = v
+    
+    B1.boundary='nonperiodic'
+
+
+    B1.p =2000
+    B1.mu = 1000
+    B1.mur =0.5
+    B1.Omin = 0
+    B1.k = 0.7
+    B1.r_0 =23
+    B1.cr = 1
+
+
+    B1.L = ((B1.N_ptcl-B1.N_active)*2*B1.r_0+(B1.N_active)*2.3*B1.r_b+2*(B1.AR-1)*B1.r_b)*1.1
+    l0 = B1.r_b*(B1.AR+1)
+    l1 = 2*B1.r_0*(B1.N_ptcl-B1.N_active)
+    l2 = 2*B1.r_b*(1+B1.AR)/2*(B1.N_active)
+    seg1 = np.linspace(B1.L*(l0/(l0+l1+l2)),B1.L*(l0+l2)/(l0+l1+l2),B1.N_active+1)
+    B1.XR = (1/2)*(seg1[-1]+seg1[-2])
+
+
+
+    direc = '211119_a_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)+',D='+str(B1.D)+',N='+str(B1.N_active)
+    os.makedirs(direc,exist_ok=True)
+
+
+    N_iter = 1000000
+    B1.set_zero((np.ones(B1.N_ensemble)==np.ones(B1.N_ensemble)))
     
 
+    B1.time_evolve()
 
+    Othres = B1.Omin+np.pi/50
+    count=0
+
+    prev_right = (np.cos(B1.O[:,0])<-np.cos(Othres))*(~(np.cos(B1.O[:,-1])>np.cos(Othres)))
+    prev_left = (np.cos(B1.O[:,-1])>np.cos(Othres))*(~(np.cos(B1.O[:,0])<-np.cos(Othres)))
+    prev_stuck = (np.cos(B1.O[:,0])<-np.cos(Othres))*(np.cos(B1.O[:,-1])>np.cos(Othres))
+    for i in range(B1.N_ensemble):
+        if prev_right[i]:
+            count+=1
+        elif prev_left[i]:
+            count+=1
+
+    age = np.zeros(B1.N_ensemble,dtype = np.int)
+
+    ang1_t = np.zeros((N_iter,B1.N_active))
+    ang2_t = np.zeros((N_iter,B1.N_active))
+    for j in trange(N_iter):
+        B1.time_evolve()
+
+        right = (np.cos(B1.O[:,0])<-np.cos(Othres))*(~(np.cos(B1.O[:,-1])>np.cos(Othres)))
+        left = (np.cos(B1.O[:,-1])>np.cos(Othres))*(~(np.cos(B1.O[:,0])<-np.cos(Othres)))
+        stuck = (np.cos(B1.O[:,0,0])<-np.cos(Othres))*(np.cos(B1.O[:,-1,0])>np.cos(Othres))
+
+
+        for i in range(B1.N_ensemble):
+            if right[i]:
+                if(not prev_right[i]):
+                    age[i] = 0
+                    count+=1
+                ang1_t[age[i]]+=B1.O[i].reshape(-1)
+                ang2_t[age[i]]+=B1.O[i].reshape(-1)**2
+            elif left[i]:
+                if (not prev_left[i]):
+                    age[i] = 0   
+                    count+=1
+                ang1_t[age[i]]+=B1.O[i].reshape(-1)
+                ang2_t[age[i]]+=B1.O[i].reshape(-1)**2
+        B1.set_zero(stuck)
+        age +=1
+
+
+        prev_right = right
+        prev_left = left
+        prev_stuck = stuck
+            
+        
+        
+        
+    ang_avg = ang1_t/count
+    ang_var = ang2_t/count-(ang1_t/count)**2
+        
+    save_dict={}
+    save_dict['ang_avg'] = ang_avg
+    save_dict['ang_var'] = ang_var
+    save_dict['N_ens'] = B1.N_ensemble
+    save_dict['N_total'] = B1.N_ptcl
+    save_dict['N_active'] = B1.N_active
+    save_dict['dt'] = B1.dt
+    save_dict['N_simul'] = N_simul
+    save_dict['v_t_avg'] = v_t_avg
+    save_dict['v_t_var'] = v_t_var
+    
+    np.savez(direc+'/v'+str(B1.V)+'.npz', **save_dict)
+
+
+def ang_scan(N_active,v_init, v_fin,N_v):
+    v_axis = np.linspace(v_init,v_fin,N_v)
+    for v in v_axis:
+        angle(N_passive=20, N_active=N_active,g=3,D=2000,v=v)
