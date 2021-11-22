@@ -671,4 +671,4 @@ def angle(N_passive, N_active,g,D,v):
 def ang_scan(N_active,v_init, v_fin,N_v):
     v_axis = np.linspace(v_init,v_fin,N_v)
     for v in v_axis:
-        angle(N_passive=20, N_active=N_active,g=3,D=2000,v=v)
+        angle(N_passive=10, N_active=N_active,g=1,D=2000,v=v)
