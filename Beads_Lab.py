@@ -641,9 +641,9 @@ def angle(N_passive, N_active,g,D,v):
                 ang2_t[age[i]]+=B1.O[i].reshape(-1)**2
         B1.set_zero(stuck)
         age +=1
-        B1.set_zero(age>int(N_iter/100))
-        count+=np.sum(age>int(N_iter/100))
-        age[age>int(N_iter/100)] *= 0
+        B1.set_zero(age>int(N_iter/100)-1)
+        count+=np.sum(age>int(N_iter/100)-1)
+        age[age>int(N_iter/100)-1] *= 0
 
 
         prev_right = right
