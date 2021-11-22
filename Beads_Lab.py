@@ -575,7 +575,7 @@ def angle(N_passive, N_active,g,D,v):
 
 
     B1.p =2000
-    B1.mu = 1000
+    B1.mu = 1500
     B1.mur =0.5
     B1.Omin = 0
     B1.k = 0.7
@@ -583,7 +583,7 @@ def angle(N_passive, N_active,g,D,v):
     B1.cr = 1
 
 
-    B1.L = ((B1.N_ptcl-B1.N_active)*2*B1.r_0+(B1.N_active)*2.3*B1.r_b+2*(B1.AR-1)*B1.r_b)*1.1
+    B1.L = ((B1.N_ptcl-B1.N_active)*2*B1.r_0+(B1.N_active)*2.3*B1.r_b+2*(B1.AR-1)*B1.r_b)*1.2
     l0 = B1.r_b*(B1.AR+1)
     l1 = 2*B1.r_0*(B1.N_ptcl-B1.N_active)
     l2 = 2*B1.r_b*(1+B1.AR)/2*(B1.N_active)
@@ -592,7 +592,7 @@ def angle(N_passive, N_active,g,D,v):
 
 
 
-    direc = '211119_a_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)+',D='+str(B1.D)+',N='+str(B1.N_active)
+    direc = '211122_a_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)+',D='+str(B1.D)+',N='+str(B1.N_active)
     os.makedirs(direc,exist_ok=True)
 
 
@@ -616,8 +616,8 @@ def angle(N_passive, N_active,g,D,v):
 
     age = np.zeros(B1.N_ensemble,dtype = np.int)
 
-    ang1_t = np.zeros((N_iter,B1.N_active))
-    ang2_t = np.zeros((N_iter,B1.N_active))
+    ang1_t = np.zeros((int(N_iter/100),B1.N_active))
+    ang2_t = np.zeros((int(N_iter/100),B1.N_active))
     for j in trange(N_iter):
         B1.time_evolve()
 
@@ -641,6 +641,9 @@ def angle(N_passive, N_active,g,D,v):
                 ang2_t[age[i]]+=B1.O[i].reshape(-1)**2
         B1.set_zero(stuck)
         age +=1
+        B1.set_zero(age>int(N_iter/100))
+        count+=np.sum(age>int(N_iter/100))
+        age[age>int(N_iter/100)] *= 0
 
 
         prev_right = right
