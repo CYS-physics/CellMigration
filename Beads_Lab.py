@@ -101,14 +101,21 @@ class Beads:     # OOP
         
 #         self.X = np.ones(self.N_ensemble).reshape(-1,1)*np.linspace(0,self.L,self.N_ptcl+1)[:self.N_ptcl].reshape(1,-1)
 #         self.X[flag]= np.zeros((np.sum(flag),self.N_ptcl,1))
-        l0 = self.r_b*(self.AR+1)
-        l1 = 2*self.r_0*(self.N_ptcl-self.N_active)
-        l2 = 2*self.r_b*(1+self.AR*1.3)/2*(self.N_active)
-        seg1 = np.ones(np.sum(flag)).reshape(-1,1,1)*np.linspace(self.L*(l0/(l0+l1+l2)),self.L*(l0+l2)/(l0+l1+l2),self.N_active+1).reshape(1,-1,1)
-        seg2 = np.ones(np.sum(flag)).reshape(-1,1,1)*np.linspace(self.L*(l0+l2)/(l0+l1+l2),self.L,self.N_ptcl-self.N_active+1).reshape(1,-1,1)
-        self.X[flag,0] = (1/2)*(seg2[:,-1]+seg2[:,-2])
-        self.X[flag,1:self.N_active+1] = (1/2)*(seg1[:,1:]+seg1[:,:-1])# active ones
-        self.X[flag,self.N_active+1:] = (1/2)*(seg2[:,1:-1]+seg2[:,:-2])     # passive ones
+        if self.boundary=='periodic':
+            l0 = self.r_b*(self.AR+1)
+            l1 = 2*self.r_0*(self.N_ptcl-self.N_active)
+            l2 = 2*self.r_b*(1+self.AR*1.3)/2*(self.N_active)
+            seg1 = np.ones(np.sum(flag)).reshape(-1,1,1)*np.linspace(self.L*(l0/(l0+l1+l2)),self.L*(l0+l2)/(l0+l1+l2),self.N_active+1).reshape(1,-1,1)
+            seg2 = np.ones(np.sum(flag)).reshape(-1,1,1)*np.linspace(self.L*(l0+l2)/(l0+l1+l2),self.L,self.N_ptcl-self.N_active+1).reshape(1,-1,1)
+            self.X[flag,0] = (1/2)*(seg2[:,-1]+seg2[:,-2])
+            self.X[flag,1:self.N_active+1] = (1/2)*(seg1[:,1:]+seg1[:,:-1])# active ones
+            self.X[flag,self.N_active+1:] = (1/2)*(seg2[:,1:-1]+seg2[:,:-2])     # passive ones
+        else:
+            self.X[flag,1:self.N_active+1] =np.ones(np.sum(flag)).reshape(-1,1,1)*np.arange(self.N_active).reshape(1,-1,1)*2.5*self.r_b # active ones
+            self.X[flag,self.N_active+1:] =  np.ones(np.sum(flag)).reshape(-1,1,1)*np.arange(self.N_ptcl-self.N_active-1).reshape(1,-1,1)*2.5*self.r_0 + (self.N_active+2)*2.5*self.r_b # passive ones
+            self.X[flag,0] = (self.N_active+2)*2.5*self.r_b+(self.N_ptcl-self.N_active+2)*2.5*self.r_0
+
+
         
         self.O[flag] = np.ones((np.sum(flag),self.N_active,1))*np.pi*(1/2+1/10)
         self.O[flag,0] = np.pi
@@ -616,8 +623,8 @@ def angle(N_passive, N_active,g,D,v):
 
     age = np.zeros(B1.N_ensemble,dtype = np.int)
 
-    ang1_t = np.zeros((int(N_iter/100),B1.N_active))
-    ang2_t = np.zeros((int(N_iter/100),B1.N_active))
+    ang1_t = np.zeros((int(N_iter/20),B1.N_active))
+    ang2_t = np.zeros((int(N_iter/20),B1.N_active))
     for j in trange(N_iter):
         B1.time_evolve()
 
@@ -641,9 +648,9 @@ def angle(N_passive, N_active,g,D,v):
                 ang2_t[age[i]]+=B1.O[i].reshape(-1)**2
         B1.set_zero(stuck)
         age +=1
-        B1.set_zero(age>int(N_iter/100)-1)
-        count+=np.sum(age>int(N_iter/100)-1)
-        age[age>int(N_iter/100)-1] *= 0
+        B1.set_zero(age>int(N_iter/20)-1)
+        count+=np.sum(age>int(N_iter/20)-1)
+        age[age>int(N_iter/20)-1] *= 0
 
 
         prev_right = right
