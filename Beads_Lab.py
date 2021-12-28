@@ -257,7 +257,7 @@ class Beads:     # OOP
         dx = (self.l**2*Fx/self.mu + self.l*np.sin(self.O)*Torque/self.mu)/(self.l**2*(1+np.cos(self.O)**2)/self.mu**2)
         do = (self.l*Fx*np.sin(self.O)/self.mu + 2*Torque/self.mu)/(self.l**2*(1+np.cos(self.O)**2)/self.mu**2)
         
-        self.X+=dx*self.dt
+        self.X[:,1:self.N_active+1]+=dx*self.dt
         self.O+=do*self.dt
         
         
@@ -387,27 +387,33 @@ class Beads:     # OOP
         
         Othres = self.Omin+np.pi/50
         
-        prev_right = (np.cos(self.O[:,0])<-np.cos(Othres))*(~(np.cos(self.O[:,-1])>np.cos(Othres)))
-        prev_left = (np.cos(self.O[:,-1])>np.cos(Othres))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
-        prev_stuck = (np.cos(self.O[:,0])<-np.cos(Othres))*(np.cos(self.O[:,-1])>np.cos(Othres))
+        
+        # starting with right moving
+        
+#         prev_right = (np.cos(self.O[:,0])<-np.cos(Othres))*(~(np.cos(self.O[:,-1])>np.cos(Othres)))
+#         prev_left = (np.cos(self.O[:,-1])>np.cos(Othres))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
+#         prev_stuck = (np.cos(self.O[:,0])<-np.cos(Othres))*(np.cos(self.O[:,-1])>np.cos(Othres))
         time = 0
         
         for i in range(self.N_ensemble):
-            if prev_right[i]:
-                move_in[i] = np.append(move_in[i],time)
-                count+=1
-            elif prev_left[i]:
-                move_in[i] = np.append(move_in[i],time)
-                count+=1
+            count+=1
+            move_in[i] = np.append(move_in[i],time)
+#             if prev_right[i]:
+#                 move_in[i] = np.append(move_in[i],time)
+#                 count+=1
+#             elif prev_left[i]:
+#                 move_in[i] = np.append(move_in[i],time)
+#                 count+=1
 
         v1_t = np.zeros(N_iter)
         v2_t = np.zeros(N_iter)
         for j in trange(N_iter):
             self.time_evolve()
+            event = (np.cos(self.O[:,-1])>np.cos(Othres))
             
-            right = (np.cos(self.O[:,0])<-np.cos(Othres))*(~(np.cos(self.O[:,-1])>np.cos(Othres)))
-            left = (np.cos(self.O[:,-1])>np.cos(Othres))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
-            stuck = (np.cos(self.O[:,0])<-np.cos(Othres))*(np.cos(self.O[:,-1])>np.cos(Othres))
+#             right = (np.cos(self.O[:,0])<-np.cos(Othres))*(~(np.cos(self.O[:,-1])>np.cos(Othres)))
+#             left = (np.cos(self.O[:,-1])>np.cos(Othres))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
+#             stuck = (np.cos(self.O[:,0])<-np.cos(Othres))*(np.cos(self.O[:,-1])>np.cos(Othres))
         
             time = j*self.dt#*N_time
             
@@ -415,37 +421,49 @@ class Beads:     # OOP
     
                     
             for i in range(self.N_ensemble):
-                if right[i]:
-                    if(not prev_right[i]):
-                        move_in[i] = np.append(move_in[i],time)
-                        age[i] = 0
-                        count+=1
-                    v1_t[age[i]]+=np.abs(self.v[i])
-                    v2_t[age[i]]+=self.v[i]**2
-                elif left[i]:
-                    if (not prev_left[i]):
-                        move_in[i] = np.append(move_in[i],time)
-                        age[i] = 0   
-                        count+=1
-                    v1_t[age[i]]+=np.abs(self.v[i])
-                    v2_t[age[i]]+=self.v[i]**2
-                elif stuck[i]*(prev_right[i] or prev_left[i]):
+                if event[i]:
                     move_out[i] = np.append(move_out[i],time)
-            self.set_zero(stuck)
+                    move_in[i] = np.append(move_in[i],time)
+                    age[i] = 0
+                    count +=1
+                else:
+                    v1_t[age[i]]+=np.abs(self.v[i])
+                    v2_t[age[i]]+=self.v[i]**2
+                    age[i] +=1
+                
+                
+#                 if right[i]:
+#                     if(not prev_right[i]):
+#                         move_in[i] = np.append(move_in[i],time)
+#                         age[i] = 0
+#                         count+=1
+#                     v1_t[age[i]]+=np.abs(self.v[i])
+#                     v2_t[age[i]]+=self.v[i]**2
+#                 elif left[i]:
+#                     if (not prev_left[i]):
+#                         move_in[i] = np.append(move_in[i],time)
+#                         age[i] = 0   
+#                         count+=1
+#                     v1_t[age[i]]+=np.abs(self.v[i])
+#                     v2_t[age[i]]+=self.v[i]**2
+#                 elif stuck[i]*(prev_right[i] or prev_left[i]):
+#                     move_out[i] = np.append(move_out[i],time)
+            self.set_zero(event)
             age +=1
             
                     
-            prev_right = right
-            prev_left = left
-            prev_stuck = stuck
+#             prev_right = right
+#             prev_left = left
+#             prev_stuck = stuck
             
             
         time +=self.dt
         for i in range(self.N_ensemble):
-            if right[i]:
-                move_out[i] = np.append(move_out[i],time)
-            elif left[i]:
-                move_out[i] = np.append(move_out[i],time)
+            move_out[i] = np.append(move_out[i],time)
+#             if right[i]:
+#                 move_out[i] = np.append(move_out[i],time)
+#             elif left[i]:
+#                 move_out[i] = np.append(move_out[i],time)
         
         
         v_t_avg = v1_t/count
@@ -463,25 +481,28 @@ class Beads:     # OOP
           
             
         
-def time(N_ptcl, N_active,g,D):
+def time(N_ptcl, N_active,g):
 
+    
     B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_ensemble = 300,Fs=500,g=g)
 
-    B1.p = 100
-    B1.D = D  #20
-    B1.mu = 0.03
-    B1.mur = 0.03
-    B1.k1 = 20
-    B1.k2 = 8
-    B1.r_cut = [1.5,1.5,1.7]
+    B1.boundary='periodic'
+    B1.p = 50
+#     B1.D = D  #20
+    B1.mu = 0.2
+#     B1.mur = 0.03
+    B1.k1 = 1
+    B1.k2 = 1
+    B1.kT = 1
+    B1.r_cut = [1.3,1.55,1.8]
     # B1.r_cut = [1.3,0.8,0.9]
-    B1.l = 1.8
+    B1.l = 1.3
     B1.Omin = 0
 
 
-    B1.L = ((B1.N_ptcl-B1.N_active+1)*2*B1.r_cut[0]+(B1.N_active+1)*2*B1.r_cut[1])*0.95
+    B1.L = ((B1.N_ptcl-B1.N_active)*B1.r_cut[0]+(B1.N_active)*B1.r_cut[2]+2*B1.r_cut[2])*1.5
 
-    direc = '211026_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)+',D='+str(B1.D)
+    direc = '211229_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)
     os.makedirs(direc,exist_ok=True)
 
 
