@@ -350,8 +350,11 @@ class Beads:     # OOP
                 fig1.savefig(str(os.getcwd())+'/record/'+str(directory)+'/'+str(nn)+'.png')
             for _ in range(self.N_skip):
                 self.time_evolve()
-            stuck = (np.cos(self.O[:,0])<-np.cos(Othres))*(np.cos(self.O[:,-1])>np.cos(Othres))
-            self.set_zero(stuck)
+                
+            right = np.sum((np.cos(self.O)>np.cos(Othres)),axis=1)
+            left = np.sum((np.cos(self.O)<-np.cos(Othres)),axis=1)
+            event = (right+left>1)
+            self.set_zero(event)
                 
     def measure(self,N_iter,initialize):
         if initialize:
@@ -409,7 +412,9 @@ class Beads:     # OOP
         v2_t = np.zeros(N_iter)
         for j in trange(N_iter):
             self.time_evolve()
-            event = (np.cos(self.O[:,-1])>np.cos(Othres))
+            right = np.sum((np.cos(self.O)>np.cos(Othres)),axis=1)
+            left = np.sum((np.cos(self.O)<-np.cos(Othres)),axis=1)
+            event = (right+left>1)
             
 #             right = (np.cos(self.O[:,0])<-np.cos(Othres))*(~(np.cos(self.O[:,-1])>np.cos(Othres)))
 #             left = (np.cos(self.O[:,-1])>np.cos(Othres))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
@@ -449,7 +454,7 @@ class Beads:     # OOP
 #                 elif stuck[i]*(prev_right[i] or prev_left[i]):
 #                     move_out[i] = np.append(move_out[i],time)
             self.set_zero(event)
-            age +=1
+#             age +=1
             
                     
 #             prev_right = right
@@ -484,25 +489,25 @@ class Beads:     # OOP
 def time(N_ptcl, N_active,g):
 
     
-    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_ensemble = 300,Fs=500,g=g)
+    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_ensemble = 300,Fs=1000,g=g)
 
     B1.boundary='periodic'
-    B1.p = 50
+    B1.p = 60
 #     B1.D = D  #20
-    B1.mu = 0.2
+    B1.mu = 0.5
 #     B1.mur = 0.03
     B1.k1 = 1
     B1.k2 = 1
     B1.kT = 1
-    B1.r_cut = [1.3,1.55,1.8]
+    B1.r_cut = [2,2.3,2.6]
     # B1.r_cut = [1.3,0.8,0.9]
-    B1.l = 1.3
+    B1.l = 2
     B1.Omin = 0
 
 
-    B1.L = ((B1.N_ptcl-B1.N_active)*B1.r_cut[0]+(B1.N_active)*B1.r_cut[2]+2*B1.r_cut[2])*1.5
+    B1.L = ((B1.N_ptcl-B1.N_active)*B1.r_cut[0]+(B1.N_active)*B1.r_cut[2]+2*B1.r_cut[2])*1.55
 
-    direc = '211229_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)
+    direc = '211229_1_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)
     os.makedirs(direc,exist_ok=True)
 
 
