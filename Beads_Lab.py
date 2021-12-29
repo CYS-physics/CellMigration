@@ -52,7 +52,8 @@ class Beads:     # OOP
         
         # dynamics
         self.p = 2000    # propulsion
-        self.mu = 0.002    #1/gamma
+        self.mu0 = 0.002    #1/gamma
+        self.mu1 = 0.002
 #         self.mur = 0.002
         self.kT = 1
         
@@ -217,9 +218,13 @@ class Beads:     # OOP
         
         
         # noise
-        f1x+=np.random.normal(0,np.sqrt(2*self.kT/(self.mu*self.dt)),(self.N_ensemble,self.N_ptcl))
-        f2x+=np.random.normal(0,np.sqrt(2*self.kT/(self.mu*self.dt)),(self.N_ensemble,self.N_active))
-        f2y+=np.random.normal(0,np.sqrt(2*self.kT/(self.mu*self.dt)),(self.N_ensemble,self.N_active))
+        
+#         print(np.random.normal(0,np.sqrt(2*self.kT/(self.mu0*self.dt)),(self.N_ensemble,1)).shape)
+        f1x[:,0]+=np.random.normal(0,np.sqrt(2*self.kT/(self.mu0*self.dt)),(self.N_ensemble))
+        f1x[:,1:self.N_active+1]+=np.random.normal(0,np.sqrt(2*self.kT/(self.mu0*self.dt)),(self.N_ensemble,self.N_active))
+        f1x[:,self.N_active+1:]+=np.random.normal(0,np.sqrt(2*self.kT/(self.mu1*self.dt)),(self.N_ensemble,self.N_ptcl-self.N_active-1))
+        f2x+=np.random.normal(0,np.sqrt(2*self.kT/(self.mu1*self.dt)),(self.N_ensemble,self.N_active))
+        f2y+=np.random.normal(0,np.sqrt(2*self.kT/(self.mu1*self.dt)),(self.N_ensemble,self.N_active))
         
         # normal force
 #         fN = self.p*np.sin(self.O)-f1y
@@ -238,14 +243,14 @@ class Beads:     # OOP
         (f1x,f2x,f2y) = self.force()
         
         # passive particles
-        self.X[:,0]+= self.mu*self.dt*f1x[:,0]
-        self.X[:,self.N_active+1:] += self.mu*self.dt*f1x[:,self.N_active+1:]
+        self.X[:,0]+= self.mu0*self.dt*f1x[:,0]
+        self.X[:,self.N_active+1:] += self.mu0*self.dt*f1x[:,self.N_active+1:]
         
         
         
         # active particles
         
-        Fx = f1x[:,1:self.N_active+1]+f2x - self.p*np.cos(self.O)/self.mu
+        Fx = f1x[:,1:self.N_active+1]+f2x - self.p*np.cos(self.O)/self.mu1
         
 #         self.v = np.mean(Fx,axis=1)*self.mu
         self.v = np.sum(np.cos(self.O),axis=1)  #*self.mu
@@ -254,8 +259,8 @@ class Beads:     # OOP
         
         
         # update configuration
-        dx = (self.l**2*Fx/self.mu + self.l*np.sin(self.O)*Torque/self.mu)/(self.l**2*(1+np.cos(self.O)**2)/self.mu**2)
-        do = (self.l*Fx*np.sin(self.O)/self.mu + 2*Torque/self.mu)/(self.l**2*(1+np.cos(self.O)**2)/self.mu**2)
+        dx = (self.l**2*Fx/self.mu1 + self.l*np.sin(self.O)*Torque/self.mu1)/(self.l**2*(1+np.cos(self.O)**2)/self.mu1**2)
+        do = (self.l*Fx*np.sin(self.O)/self.mu1 + 2*Torque/self.mu1)/(self.l**2*(1+np.cos(self.O)**2)/self.mu1**2)
         
         self.X[:,1:self.N_active+1]+=dx*self.dt
         self.O+=do*self.dt
@@ -308,7 +313,7 @@ class Beads:     # OOP
         
         os.makedirs('record/'+str(directory),exist_ok=True)
         self.time_evolve()
-        Othres = self.Omin+np.pi/50
+        Othres = self.Omin+np.pi/20
         
         
         for nn in trange(N_iter):
@@ -492,28 +497,29 @@ def time(N_ptcl, N_active,g):
     B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_ensemble = 300,Fs=1000,g=g)
 
     B1.boundary='periodic'
-    B1.p = 60
+    B1.p = 300
 #     B1.D = D  #20
-    B1.mu = 0.5
+    B1.mu0 = 10
+    B1.mu1 = 10
 #     B1.mur = 0.03
     B1.k1 = 1
     B1.k2 = 1
-    B1.kT = 1
-    B1.r_cut = [2,2.3,2.6]
+    B1.kT = 1.5
+    B1.r_cut = [10,12,14]
     # B1.r_cut = [1.3,0.8,0.9]
-    B1.l = 2
+    B1.l = 10
     B1.Omin = 0
 
 
     B1.L = ((B1.N_ptcl-B1.N_active)*B1.r_cut[0]+(B1.N_active)*B1.r_cut[2]+2*B1.r_cut[2])*1.55
 
-    direc = '211229_1_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)
+    direc = '211229_2_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)
     os.makedirs(direc,exist_ok=True)
 
 
 
 #     (right_in,left_in,stuck_in, right_out, left_out,stuck_out) = B1.transit(200000)
-    N_simul = 1000000
+    N_simul = 2000000
     (move_in,move_out,v_t_avg,v_t_var) = B1.transit(N_simul)
 
 
