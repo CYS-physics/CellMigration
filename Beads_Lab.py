@@ -410,7 +410,7 @@ class Beads:     # OOP
 
         v1_t = np.zeros(N_iter)
         v2_t = np.zeros(N_iter)
-        for j in trange(N_iter):
+        for j in range(N_iter):
             self.time_evolve()
             right = np.sum((np.cos(self.O)>np.cos(Othres)),axis=1)
             left = np.sum((np.cos(self.O)<-np.cos(Othres)),axis=1)
