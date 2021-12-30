@@ -505,7 +505,7 @@ def time(N_ptcl, N_active,g):
     B1.k1 = 1
     B1.k2 = 1
     B1.kT = 1.5
-    B1.r_cut = [10,12,14]
+    B1.r_cut = [10,11.5,13]
     # B1.r_cut = [1.3,0.8,0.9]
     B1.l = 10
     B1.Omin = 0
@@ -513,7 +513,7 @@ def time(N_ptcl, N_active,g):
 
     B1.L = ((B1.N_ptcl-B1.N_active)*B1.r_cut[0]+(B1.N_active)*B1.r_cut[2]+2*B1.r_cut[2])*1.55
 
-    direc = '211229_2_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)
+    direc = '211230_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)
     os.makedirs(direc,exist_ok=True)
 
 
