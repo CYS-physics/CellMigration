@@ -404,7 +404,6 @@ class Beads:     # OOP
         time = 0
         
         for i in range(self.N_ensemble):
-            count[0]+=1
             move_in[i] = np.append(move_in[i],time)
 #             if prev_right[i]:
 #                 move_in[i] = np.append(move_in[i],time)
@@ -435,12 +434,13 @@ class Beads:     # OOP
                     move_out[i] = np.append(move_out[i],time)
                     move_in[i] = np.append(move_in[i],time)
                     age[i] = 0
-                    count[age[i]] +=1
+#                     count[age[i]] +=1
                 else:
                     v1_t[age[i]]+=np.abs(self.v[i])
                     v2_t[age[i]]+=self.v[i]**2
-                    age[i] +=1
+                    
                     count[age[i]] +=1
+                    age[i] +=1
                 
                 
 #                 if right[i]:
