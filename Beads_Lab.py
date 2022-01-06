@@ -239,6 +239,7 @@ class Beads:     # OOP
     def time_evolve(self):
         if self.boundary!='periodic':
             self.X-=self.V*self.dt
+        self.v = np.sum(np.cos(self.O),axis=1)  #*self.mu
         
         (f1x,f2x,f2y) = self.force()
         
@@ -253,7 +254,7 @@ class Beads:     # OOP
         Fx = f1x[:,1:self.N_active+1]+f2x - self.p*np.cos(self.O)/self.mu1
         
 #         self.v = np.mean(Fx,axis=1)*self.mu
-        self.v = np.sum(np.cos(self.O),axis=1)  #*self.mu
+        
     
         Torque = self.l*(f2y*np.cos(self.O)-f2x*np.sin(self.O))
         
@@ -261,6 +262,14 @@ class Beads:     # OOP
         # update configuration
         dx = (self.l**2*Fx/self.mu1 + self.l*np.sin(self.O)*Torque/self.mu1)/(self.l**2*(1+np.cos(self.O)**2)/self.mu1**2)
         do = (self.l*Fx*np.sin(self.O)/self.mu1 + 2*Torque/self.mu1)/(self.l**2*(1+np.cos(self.O)**2)/self.mu1**2)
+        
+        
+        lean_right = (self.O+do*self.dt<0)
+        lean_left = (self.O+do*self.dt>np.pi)
+        
+        Torque[lean_right] = (1/2)*((-self.O/self.dt)self.l**2*(1+np.cos(self.O)**2)/self.mu1-self.l)
+        Torque[lean_left] = (1/2)*(((np.pi-self.O)/self.dt))
+        
         
         self.X[:,1:self.N_active+1]+=dx*self.dt
         self.O+=do*self.dt
