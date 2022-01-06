@@ -267,9 +267,11 @@ class Beads:     # OOP
         lean_right = (self.O+do*self.dt<0)
         lean_left = (self.O+do*self.dt>np.pi)
         
-        Torque[lean_right] = (1/2)*((-self.O/self.dt)self.l**2*(1+np.cos(self.O)**2)/self.mu1-self.l)
-        Torque[lean_left] = (1/2)*(((np.pi-self.O)/self.dt))
+        Torque[lean_right] = (1/2)*((-self.O[lean_right]/self.dt)*self.l**2*(1+np.cos(self.O[lean_right])**2)/self.mu1-self.l*np.sin(self.O[lean_right])*Fx[lean_right])
+        Torque[lean_left] = (1/2)*(((np.pi-self.O[lean_left])/self.dt)*self.l**2*(1+np.cos(self.O[lean_left])**2)/self.mu1-self.l*np.sin(self.O[lean_left])*Fx[lean_left])
         
+        dx = (self.l**2*Fx/self.mu1 + self.l*np.sin(self.O)*Torque/self.mu1)/(self.l**2*(1+np.cos(self.O)**2)/self.mu1**2)
+        do = (self.l*Fx*np.sin(self.O)/self.mu1 + 2*Torque/self.mu1)/(self.l**2*(1+np.cos(self.O)**2)/self.mu1**2)
         
         self.X[:,1:self.N_active+1]+=dx*self.dt
         self.O+=do*self.dt
