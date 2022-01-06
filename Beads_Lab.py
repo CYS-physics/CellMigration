@@ -498,7 +498,7 @@ class Beads:     # OOP
 def time(N_ptcl, N_active,g):
 
     
-    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_ensemble = 300,Fs=1000,g=g)
+    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_ensemble = 100,Fs=1000,g=g)
 
     B1.boundary='periodic'
     B1.p = 300
@@ -517,13 +517,13 @@ def time(N_ptcl, N_active,g):
 
     B1.L = ((B1.N_ptcl-B1.N_active)*B1.r_cut[0]+(B1.N_active)*B1.r_cut[2]+2*B1.r_cut[2])*1.55
 
-    direc = '220103_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)
+    direc = '220106_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)
     os.makedirs(direc,exist_ok=True)
 
 
 
 #     (right_in,left_in,stuck_in, right_out, left_out,stuck_out) = B1.transit(200000)
-    N_simul = 1000000
+    N_simul = 5000000
     (move_in,move_out,v_t_avg,v_t_var) = B1.transit(N_simul)
 
 
