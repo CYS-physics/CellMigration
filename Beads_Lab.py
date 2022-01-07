@@ -503,9 +503,9 @@ class Beads:     # OOP
         
 def time(N_ptcl, N_active,g):
 
-    
-    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_ensemble = 300,Fs=2000,g=g)
     scale = 2
+    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_ensemble = 300,Fs=2000,g=g*scale)
+    
 
     B1.boundary='periodic'
     B1.p =50*scale
@@ -535,24 +535,7 @@ def time(N_ptcl, N_active,g):
     (count,v_t_avg,v_t_var) = B1.transit(N_simul)
 
 
-#     right_in =np.array(right_in)
-#     left_in = np.array(left_in)
-#     stuck_in = np.array(stuck_in)
-#     right_out =np.array(right_out)
-#     left_out = np.array(left_out)
-#     stuck_out = np.array(stuck_out)
-#     move_in = np.array(move_in,dtype=object)
-#     move_out =np.array(move_out,dtype=object)
-
     save_dict={}
-#     save_dict['right_in'] = right_in
-#     save_dict['left_in'] = left_in
-#     save_dict['stuck_in'] = stuck_in
-#     save_dict['right_out'] = right_out
-#     save_dict['left_out'] = left_out
-#     save_dict['stuck_out'] = stuck_out
-#     save_dict['move_in'] = move_in
-#     save_dict['move_out'] = move_out 
     save_dict['count'] = count
     
     save_dict['N_ens'] = B1.N_ensemble
