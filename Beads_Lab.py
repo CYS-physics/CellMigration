@@ -61,12 +61,12 @@ class Beads:     # OOP
         self.k1 = 1         # epsilon of WCA potential
         self.k2 = 0.1
         self.l = 1    # length between fixed beads
-        self.r_cut = [1.5,1.65,1.8]  # radius of beads [r1+r1,r1+r2,r2+r2]
+        self.r_bead = [1.5,1.65,1.8]  # radius of beads [r0,r1,r2]  passive, active_lower, active_upper
         self.g = g
         
         
         
-        self.Omin = np.arcsin((self.r_cut[2]-self.r_cut[1])/self.l)
+        self.Omin = np.arcsin((self.r_bead[2]-self.r_bead[1])/self.l)
         
     # boundary condition
     
@@ -81,18 +81,18 @@ class Beads:     # OOP
     def set_zero(self,flag):              # initializing simulation configurations
         
         if self.boundary=='periodic':
-            l0 = self.r_cut[0]*(2.5)
-            l1 = 2*self.r_cut[0]*(self.N_ptcl-self.N_active)
-            l2 = 2*self.r_cut[2]*(2.5)/2*(self.N_active)
+            l0 = self.r_bead[2]*2
+            l1 = 2*self.r_bead[0]*(self.N_ptcl-self.N_active)
+            l2 = 2*self.r_bead[1]*(self.N_active)
             seg1 = np.ones(np.sum(flag)).reshape(-1,1)*np.linspace(self.L*(l0/(l0+l1+l2)),self.L*(l0+l2)/(l0+l1+l2),self.N_active+1).reshape(1,-1)
             seg2 = np.ones(np.sum(flag)).reshape(-1,1)*np.linspace(self.L*(l0+l2)/(l0+l1+l2),self.L,self.N_ptcl-self.N_active+1).reshape(1,-1)
             self.X[flag,0] = (1/2)*(seg2[:,-1]+seg2[:,-2])
             self.X[flag,1:self.N_active+1] = (1/2)*(seg1[:,1:]+seg1[:,:-1])# active ones
             self.X[flag,self.N_active+1:] = (1/2)*(seg2[:,1:-1]+seg2[:,:-2])     # passive ones
         else:
-            self.X[flag,1:self.N_active+1] =np.ones(np.sum(flag)).reshape(-1,1)*np.arange(self.N_active).reshape(1,-1)*2.5*self.r_cut[2] # active ones
-            self.X[flag,self.N_active+1:] =  np.ones(np.sum(flag)).reshape(-1,1)*np.arange(self.N_ptcl-self.N_active-1).reshape(1,-1)*2.5*self.r_cut[0] + (self.N_active)*2.5*self.r_cut[2] # passive ones
-            self.X[flag,0] = (self.N_active)*2.5*self.r_cut[2]+(self.N_ptcl-self.N_active-1)*2.5*self.r_cut[0]
+            self.X[flag,1:self.N_active+1] =np.ones(np.sum(flag)).reshape(-1,1)*np.arange(self.N_active).reshape(1,-1)*2*self.r_bead[1] # active ones
+            self.X[flag,self.N_active+1:] =  np.ones(np.sum(flag)).reshape(-1,1)*np.arange(self.N_ptcl-self.N_active-1).reshape(1,-1)*2*self.r_bead[0] + (self.N_active)*2*self.r_bead[1] # passive ones
+            self.X[flag,0] = (self.N_active)*2*self.r_bead[1]+(self.N_ptcl-self.N_active-1)*2*self.r_bead[0]
 
 
         
@@ -109,11 +109,6 @@ class Beads:     # OOP
         
         self.Xs = self.periodic(self.Xs)
     
-#     def WCAx(self,rx,ry,r_cut): # return the gradient of WCA potential -> odd
-#         r = np.sqrt(rx**2 + ry**2)
-#         force = 4*self.k*(-12*r**(-13)/self.r_0**(-12)+6*r**(-7)/self.r_0**(-6))*(np.abs(r)<self.r_cut)
-# #         return force*np.divide(rx,r,out=np.zeros_like(rx),where=r!=0)
-#         return force*rx/r
     
     def WCA(self,rx,ry,r_cut,k):
         r_0 = r_cut*2**(-1/6)
@@ -142,11 +137,11 @@ class Beads:     # OOP
             relx_left=self.periodic(relx_left)
         rely_right = np.zeros((self.N_ensemble,self.N_ptcl))
         rely_left = np.zeros((self.N_ensemble,self.N_ptcl))
-        rely_right[:,0] = -self.r_cut[0]+self.r_cut[1]
-        rely_left[:,self.N_active+2] = self.r_cut[0]-self.r_cut[1]
+        rely_right[:,0] = -self.r_bead[0]+self.r_bead[1]
+        rely_left[:,self.N_active+2] = self.r_bead[0]-self.r_bead[1]
         
-        lengthR = np.concatenate(([self.r_cut[0]+self.r_cut[1]],(self.r_cut[1]*2)*np.ones(self.N_active-1),[self.r_cut[0]+self.r_cut[1]],(self.r_cut[0]*2)*np.ones(self.N_ptcl-self.N_active-1)))
-        lengthL = np.concatenate(([self.r_cut[0]*2],[self.r_cut[0]+self.r_cut[1]],(self.r_cut[1]*2)*np.ones(self.N_active-1),[self.r_cut[0]+self.r_cut[1]],(self.r_cut[0]*2)*np.ones(self.N_ptcl-self.N_active-2)))
+        lengthR = np.concatenate(([self.r_bead[0]+self.r_bead[1]],(self.r_bead[1]*2)*np.ones(self.N_active-1),[self.r_bead[0]+self.r_bead[1]],(self.r_bead[0]*2)*np.ones(self.N_ptcl-self.N_active-1)))
+        lengthL = np.concatenate(([self.r_bead[0]*2],[self.r_bead[0]+self.r_bead[1]],(self.r_bead[1]*2)*np.ones(self.N_active-1),[self.r_bead[0]+self.r_bead[1]],(self.r_bead[0]*2)*np.ones(self.N_ptcl-self.N_active-2)))
         
         (fx,fy)=self.WCA(relx_right,rely_right,lengthR,self.k1)
         f1x += fx # right particle
@@ -163,11 +158,11 @@ class Beads:     # OOP
             relx_left=self.periodic(relx_left)
         rely_right = -self.Ys
         rely_left = -self.Ys
-        rely_right[:,-1] += self.r_cut[0]-self.r_cut[1]
-        rely_left[:,0] -= self.r_cut[0]-self.r_cut[1]
+        rely_right[:,-1] += self.r_bead[0]-self.r_bead[1]
+        rely_left[:,0] -= self.r_bead[0]-self.r_bead[1]
         
-        lengthR = np.concatenate(((self.r_cut[1]+self.r_cut[2])*np.ones(self.N_active-1),[(self.r_cut[0]+self.r_cut[2])]))
-        lengthL = np.concatenate(([(self.r_cut[0]+self.r_cut[2])],(self.r_cut[1]+self.r_cut[2])*np.ones(self.N_active-1)))
+        lengthR = np.concatenate(((self.r_bead[1]+self.r_bead[2])*np.ones(self.N_active-1),[(self.r_bead[0]+self.r_bead[2])]))
+        lengthL = np.concatenate(([(self.r_bead[0]+self.r_bead[2])],(self.r_bead[1]+self.r_bead[2])*np.ones(self.N_active-1)))
         
         (fx,fy)=self.WCA(relx_right,rely_right,lengthR,self.k2)
         f2x+=fx
@@ -187,11 +182,11 @@ class Beads:     # OOP
             relx_left=self.periodic(relx_left)
         rely_right = self.Ys
         rely_left = self.Ys
-        rely_right[:,0] -= self.r_cut[0]-self.r_cut[1]
-        rely_left[:,-1] += self.r_cut[0]-self.r_cut[1]
+        rely_right[:,0] -= self.r_bead[0]-self.r_bead[1]
+        rely_left[:,-1] += self.r_bead[0]-self.r_bead[1]
         
-        lengthR = np.concatenate(([(self.r_cut[0]+self.r_cut[2])],(self.r_cut[1]+self.r_cut[2])*np.ones(self.N_active-1)))
-        lengthL = np.concatenate(((self.r_cut[1]+self.r_cut[2])*np.ones(self.N_active-1),[(self.r_cut[0]+self.r_cut[2])]))
+        lengthR = np.concatenate(([(self.r_bead[0]+self.r_bead[2])],(self.r_bead[1]+self.r_bead[2])*np.ones(self.N_active-1)))
+        lengthL = np.concatenate(((self.r_bead[1]+self.r_bead[2])*np.ones(self.N_active-1),[(self.r_bead[0]+self.r_bead[2])]))
         
         (fx,fy)=self.WCA(relx_right,rely_right,lengthR,self.k2)
         f1x[:,:self.N_active]+=fx
@@ -209,10 +204,10 @@ class Beads:     # OOP
         rely_right = self.Ys[:,1:]-self.Ys[:,:-1]
         rely_left = self.Ys[:,:-1]-self.Ys[:,1:]
         
-        (fx,fy)=self.WCA(relx_right,rely_right,self.r_cut[2]*2,self.k2)
+        (fx,fy)=self.WCA(relx_right,rely_right,self.r_bead[2]*2,self.k2)
         f2x[:,:-1]+=fx
         f2y[:,:-1]+=fy
-        (fx,fy)=self.WCA(relx_left,rely_left,self.r_cut[2]*2,self.k2)
+        (fx,fy)=self.WCA(relx_left,rely_left,self.r_bead[2]*2,self.k2)
         f2x[:,1:]+=fx
         f2y[:,1:]+=fy
         
@@ -330,31 +325,31 @@ class Beads:     # OOP
         for nn in trange(N_iter):
             
             ax1.clear()
-            ax1.scatter(self.X[0][0],self.r_cut[0],s=self.r_cut[0]**2*200000/self.L**2,color='red')
-            ax1.scatter(self.X[0][self.N_active+1:],np.zeros(self.N_ptcl-self.N_active-1)+self.r_cut[0],s=self.r_cut[0]**2*200000/self.L**2,color='red')
-            ax1.scatter(self.X[0][1:self.N_active+1],np.zeros(self.N_active)+self.r_cut[1],s=self.r_cut[1]**2*200000/self.L**2,color='green')
+            ax1.scatter(self.X[0][0],self.r_bead[0],s=self.r_bead[0]**2*200000/self.L**2,color='red')
+            ax1.scatter(self.X[0][self.N_active+1:],np.zeros(self.N_ptcl-self.N_active-1)+self.r_bead[0],s=self.r_bead[0]**2*200000/self.L**2,color='red')
+            ax1.scatter(self.X[0][1:self.N_active+1],np.zeros(self.N_active)+self.r_bead[1],s=self.r_bead[1]**2*200000/self.L**2,color='green')
 
-            ax1.scatter(self.Xs[0],self.Ys[0]+self.r_cut[1],s=self.r_cut[2]**2*200000/self.L**2,color='blue')
+            ax1.scatter(self.Xs[0],self.Ys[0]+self.r_bead[1],s=self.r_bead[2]**2*200000/self.L**2,color='blue')
             ax1.axis(axrange)
             ax1.set_aspect('equal', 'box')
             
             
             
             ax2.clear()
-            ax2.scatter(self.X[1][0],self.r_cut[0],s=self.r_cut[0]**2*200000/self.L**2,color='red')
-            ax2.scatter(self.X[1][self.N_active+1:],np.zeros(self.N_ptcl-self.N_active-1)+self.r_cut[0],s=self.r_cut[0]**2*200000/self.L**2,color='red')
-            ax2.scatter(self.X[1][1:self.N_active+1],np.zeros(self.N_active)+self.r_cut[1],s=self.r_cut[1]**2*200000/self.L**2,color='green')
-            ax2.scatter(self.Xs[1],self.Ys[1]+self.r_cut[1],s=self.r_cut[2]**2*200000/self.L**2,color='blue')
+            ax2.scatter(self.X[1][0],self.r_bead[0],s=self.r_bead[0]**2*200000/self.L**2,color='red')
+            ax2.scatter(self.X[1][self.N_active+1:],np.zeros(self.N_ptcl-self.N_active-1)+self.r_bead[0],s=self.r_bead[0]**2*200000/self.L**2,color='red')
+            ax2.scatter(self.X[1][1:self.N_active+1],np.zeros(self.N_active)+self.r_bead[1],s=self.r_bead[1]**2*200000/self.L**2,color='green')
+            ax2.scatter(self.Xs[1],self.Ys[1]+self.r_bead[1],s=self.r_bead[2]**2*200000/self.L**2,color='blue')
             ax2.axis(axrange)
             ax2.set_aspect('equal', 'box')
             
             
             
             ax3.clear()
-            ax3.scatter(self.X[2][0],self.r_cut[0],s=self.r_cut[0]**2*200000/self.L**2,color='red')
-            ax3.scatter(self.X[2][self.N_active+1:],np.zeros(self.N_ptcl-self.N_active-1)+self.r_cut[0],s=self.r_cut[0]**2*200000/self.L**2,color='red')
-            ax3.scatter(self.X[2][1:self.N_active+1],np.zeros(self.N_active)+self.r_cut[1],s=self.r_cut[1]**2*200000/self.L**2,color='green')
-            ax3.scatter(self.Xs[2],self.Ys[2]+self.r_cut[1],s=self.r_cut[2]**2*200000/self.L**2,color='blue')
+            ax3.scatter(self.X[2][0],self.r_bead[0],s=self.r_bead[0]**2*200000/self.L**2,color='red')
+            ax3.scatter(self.X[2][self.N_active+1:],np.zeros(self.N_ptcl-self.N_active-1)+self.r_bead[0],s=self.r_bead[0]**2*200000/self.L**2,color='red')
+            ax3.scatter(self.X[2][1:self.N_active+1],np.zeros(self.N_active)+self.r_bead[1],s=self.r_bead[1]**2*200000/self.L**2,color='green')
+            ax3.scatter(self.Xs[2],self.Ys[2]+self.r_bead[1],s=self.r_bead[2]**2*200000/self.L**2,color='blue')
             ax3.axis(axrange)
             ax3.set_aspect('equal', 'box')
             
@@ -397,8 +392,8 @@ class Beads:     # OOP
     def transit(self,N_iter):
         self.set_zero((np.ones(self.N_ensemble)==np.ones(self.N_ensemble)))
         
-        move_in = [np.zeros(0)]*self.N_ensemble
-        move_out = [np.zeros(0)]*self.N_ensemble
+#         move_in = [np.zeros(0)]*self.N_ensemble
+#         move_out = [np.zeros(0)]*self.N_ensemble
         count = np.zeros(N_iter)
         age = np.zeros(self.N_ensemble,dtype = np.int)
 
@@ -412,10 +407,10 @@ class Beads:     # OOP
 #         prev_right = (np.cos(self.O[:,0])<-np.cos(Othres))*(~(np.cos(self.O[:,-1])>np.cos(Othres)))
 #         prev_left = (np.cos(self.O[:,-1])>np.cos(Othres))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
 #         prev_stuck = (np.cos(self.O[:,0])<-np.cos(Othres))*(np.cos(self.O[:,-1])>np.cos(Othres))
-        time = 0
+#         time = 0   # 220107
         
-        for i in range(self.N_ensemble):
-            move_in[i] = np.append(move_in[i],time)
+#         for i in range(self.N_ensemble):          # 220107
+#             move_in[i] = np.append(move_in[i],time)          # 220107
 #             if prev_right[i]:
 #                 move_in[i] = np.append(move_in[i],time)
 #                 count+=1
@@ -435,15 +430,15 @@ class Beads:     # OOP
 #             left = (np.cos(self.O[:,-1])>np.cos(Othres))*(~(np.cos(self.O[:,0])<-np.cos(Othres)))
 #             stuck = (np.cos(self.O[:,0])<-np.cos(Othres))*(np.cos(self.O[:,-1])>np.cos(Othres))
         
-            time = j*self.dt#*N_time
+#             time = j*self.dt#*N_time  # 220107
             
     
     
                     
             for i in range(self.N_ensemble):
                 if event[i]:
-                    move_out[i] = np.append(move_out[i],time)
-                    move_in[i] = np.append(move_in[i],time)
+#                     move_out[i] = np.append(move_out[i],time)          # 220107
+#                     move_in[i] = np.append(move_in[i],time)          # 220107
                     age[i] = 0
 #                     count[age[i]] +=1
                 else:
@@ -479,9 +474,9 @@ class Beads:     # OOP
 #             prev_stuck = stuck
             
             
-        time +=self.dt
-        for i in range(self.N_ensemble):
-            move_out[i] = np.append(move_out[i],time)
+#         time +=self.dt          # 220107
+#         for i in range(self.N_ensemble):          # 220107
+#             move_out[i] = np.append(move_out[i],time)          # 220107
 #             if right[i]:
 #                 move_out[i] = np.append(move_out[i],time)
 #             elif left[i]:
@@ -500,7 +495,7 @@ class Beads:     # OOP
 
 #         return(right_in,left_in,stuck_in, right_out, left_out,stuck_out)
 
-        return(move_in, move_out,v_t_avg,v_t_var)
+        return(count,v_t_avg,v_t_var)
 
 
           
@@ -509,33 +504,35 @@ class Beads:     # OOP
 def time(N_ptcl, N_active,g):
 
     
-    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_ensemble = 50,Fs=1000,g=g)
+    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_ensemble = 300,Fs=2000,g=g)
+    scale = 2
 
     B1.boundary='periodic'
-    B1.p = 300
-#     B1.D = D  #20
-    B1.mu0 = 10
-    B1.mu1 = 10
-#     B1.mur = 0.03
+    B1.p =50*scale
+    # B1.D = 2
+    B1.mu0 = 2*scale
+    B1.mu1 = 4*scale
+    # B1.mur =0.05
+    B1.Omin = 0
+    B1.kT = 1
     B1.k1 = 1
     B1.k2 = 1
-    B1.kT = 1.5
-    B1.r_cut = [10,11.5,13]
-    # B1.r_cut = [1.3,0.8,0.9]
-    B1.l = 10
-    B1.Omin = 0
+
+    B1.l = 2*scale
+    B1.r_bead = [3*scale,2*scale,2.3*scale]
+    B1.cr = 1
 
 
-    B1.L = ((B1.N_ptcl-B1.N_active)*B1.r_cut[0]+(B1.N_active)*B1.r_cut[2]+2*B1.r_cut[2])*1.55
+    B1.L = ((B1.N_ptcl-B1.N_active)*B1.r_bead[0]+(B1.N_active)*B1.r_bead[1]+2*B1.r_bead[2])*2
 
-    direc = '220107_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)
+    direc = '220107_1_v_t/N_ptcl='+str(B1.N_ptcl)+',g='+str(B1.g)
     os.makedirs(direc,exist_ok=True)
 
 
 
 #     (right_in,left_in,stuck_in, right_out, left_out,stuck_out) = B1.transit(200000)
     N_simul = 3000000
-    (move_in,move_out,v_t_avg,v_t_var) = B1.transit(N_simul)
+    (count,v_t_avg,v_t_var) = B1.transit(N_simul)
 
 
 #     right_in =np.array(right_in)
@@ -544,8 +541,8 @@ def time(N_ptcl, N_active,g):
 #     right_out =np.array(right_out)
 #     left_out = np.array(left_out)
 #     stuck_out = np.array(stuck_out)
-    move_in = np.array(move_in,dtype=object)
-    move_out =np.array(move_out,dtype=object)
+#     move_in = np.array(move_in,dtype=object)
+#     move_out =np.array(move_out,dtype=object)
 
     save_dict={}
 #     save_dict['right_in'] = right_in
@@ -554,8 +551,9 @@ def time(N_ptcl, N_active,g):
 #     save_dict['right_out'] = right_out
 #     save_dict['left_out'] = left_out
 #     save_dict['stuck_out'] = stuck_out
-    save_dict['move_in'] = move_in
-    save_dict['move_out'] = move_out 
+#     save_dict['move_in'] = move_in
+#     save_dict['move_out'] = move_out 
+    save_dict['count'] = count
     
     save_dict['N_ens'] = B1.N_ensemble
     save_dict['N_total'] = B1.N_ptcl
