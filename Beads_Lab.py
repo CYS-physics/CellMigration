@@ -504,7 +504,7 @@ class Beads:     # OOP
 def time(N_ptcl, N_active,g):
 
     scale = 2
-    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_ensemble = 300,Fs=10000,g=g*scale)
+    B1 = Beads(L=68, N_ptcl = N_ptcl,N_active = N_active,N_ensemble = 1000,Fs=10000,g=g*scale)
     
 
     B1.boundary='periodic'
@@ -531,7 +531,7 @@ def time(N_ptcl, N_active,g):
 
 
 #     (right_in,left_in,stuck_in, right_out, left_out,stuck_out) = B1.transit(200000)
-    N_simul = 1000000
+    N_simul = 500000
     (count,v_t_avg,v_t_var) = B1.transit(N_simul)
 
 
